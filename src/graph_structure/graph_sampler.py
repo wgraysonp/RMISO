@@ -34,17 +34,27 @@ class GraphBatchSampler(Sampler):
         elif algorithm == "metropolis_hastings":
             self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self.graph)
 
+        self.state = self.sampling_alg.state
+
     def __iter__(self):
         iter_count = 0
         while iter_count < self.epoch_length:
             curr = self.graph.nodes[self.sampling_alg.state]
             batch = curr.data
-            yield batch
-            self.sampling_alg.step()
             iter_count += 1
+            yield batch
+            # Need to step the sampling algorithm after yielding the bath so that
+            # the current sampling state associated with the batch can be
+            # accessed in the training loop
+            self.sampling_alg.step()
+            self.state = self.sampling_alg.state
 
     def __len__(self):
         return self.graph.num_nodes
+
+    def get_state(self):
+        return self.state
+
 
 
 
