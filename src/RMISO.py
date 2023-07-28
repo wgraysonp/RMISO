@@ -34,7 +34,6 @@ class RMISO(Optimizer):
                 # State initialization
                 if len(state) == 0:
                     state['step'] = 0
-                    # holds the current node the sampling algorithm is on
                     state['avg_grad'] = torch.zeros_like(p.data)
                     state['avg_param'] = torch.zeros_like(p.data)
 
@@ -60,14 +59,14 @@ class RMISO(Optimizer):
                 avg_param = state['avg_param']
                 state['step'] += 1
 
-                gamma = 1/self.batch_num
+                pi = 1/self.batch_num
 
-                avg_grad.add_(grad - state['old_grads'][node_id], alpha=gamma)
+                avg_grad.add_(grad - state['old_grads'][node_id], alpha=pi)
                 state['avg_grad'] = avg_grad
                 state['old_grads'][node_id] = grad
 
                 param = p.data
-                avg_param.add_(param - state['old_param'][node_id], alpha=gamma)
+                avg_param.add_(param - state['old_param'][node_id], alpha=pi)
                 state['avg_param'] = avg_param
                 state['old_param'][node_id] = param
 
@@ -76,7 +75,7 @@ class RMISO(Optimizer):
 
                 param.mul_(group['rho']*lmbda)
                 param.add_(avg_param, alpha=L*lmbda)
-                param.add_(avg_grad, alpha=-lmbda)
+                param.add_(-avg_grad, alpha=lmbda)
 
                 p.data = param
 
