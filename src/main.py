@@ -58,8 +58,8 @@ def build_dataset(args):
     ])
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-    batch_sampler = GraphBatchSampler(trainset, load_graph=args.load_graph, algorithm=args.sampling_algorithm, initial_state=0,
-                                      num_nodes=args.graph_size, num_edges=args.graph_edges)
+    batch_sampler = GraphBatchSampler(trainset, load_graph=args.load_graph, algorithm=args.sampling_algorithm,
+                                      initial_state=0, num_nodes=args.graph_size, num_edges=args.graph_edges)
     train_loader = DataLoader(trainset, batch_sampler=batch_sampler, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
@@ -115,17 +115,17 @@ def create_optimizer(args, model_params):
     elif args.optim == 'adagrad':
         return optim.Adam(model_params, args.lr, weight_decay=args.weight_decay)
     elif args.optim == 'adam':
-        return optim.Adam(model_params, args.lr, betas=(args.beta_1, args.beta_2),
+        return optim.Adam(model_params, args.lr, betas=(args.beta1, args.beta2),
                           weight_decay=args.weight_decay)
     elif args.optim == 'amsgrad':
-        return optim.Adam(model_params, args.lr, betas=(args.beta_1, args.beta_2),
+        return optim.Adam(model_params, args.lr, betas=(args.beta1, args.beta2),
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, batch_num=args.graph_size,
                      dynamic_step=args.dynamic_step, rho=args.rho)
     elif args.optim == 'adabound':
-        return AdaBound(model_params, args.lr, betas = (args.beta1, args.beta2),
-                        final_lr=args.final_lr, gamma = args.gamma,
+        return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
+                        final_lr=args.final_lr, gamma=args.gamma,
                         weight_decay=args.weight_decay)
     else:
         assert args.optim == 'amsbound'
@@ -196,7 +196,8 @@ def main():
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
-                              graph_size=args.graph_size, graph_edges=args.graph_edges,
+                              graph_size=args.graph_size, rho=args.rho,
+                              graph_edges=args.graph_edges,
                               sampling_alg=args.sampling_algorithm)
 
     if args.resume:
