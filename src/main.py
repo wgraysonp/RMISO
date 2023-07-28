@@ -120,7 +120,7 @@ def create_optimizer(args, model_params):
         return optim.Adam(model_params, args.lr, betas=(args.beta_1, args.beta_2),
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
-        return RMISO(model_params, args.lr, batch_num=args.num_nodes,
+        return RMISO(model_params, args.lr, batch_num=args.graph_size,
                      dynamic_step=args.dynamic_step, rho=args.rho)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas = (args.beta1, args.beta2),
