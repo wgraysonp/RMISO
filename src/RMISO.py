@@ -5,19 +5,21 @@ from torch.optim import Optimizer
 
 class RMISO(Optimizer):
 
-    def __init__(self, params, batch_num, dynamic_step=False, L=1, rho=1):
+    def __init__(self, params, lr, batch_num=10, dynamic_step=False, rho=1):
+        # lr is 1/L where L is lipshitz constant. Store it this way so that the learning rate scheduler can be used
         if not 0.0 <= rho:
             raise ValueError("Invalid regularization parameter: {}".format(rho))
-        if not 0.0 <= L:
-            raise ValueError("Invalid Lipschitz constant: {}".format(L))
-        defaults = dict(lr=1/(rho + L), dynamic_step=dynamic_step, rho=rho, L=L)
+        if not 0.0 <= lr:
+            raise ValueError("Invalid learning rate: {}".format(lr))
+        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho)
         super(RMISO, self).__init__(params, defaults)
         self.batch_num = batch_num
+        self.curr_node = 0
 
     def __setstate__(self, state):
         super(RMISO, self).__setstate__(state)
 
-    def step(self, batch_id=0, closure=None):
+    def step(self, closure=None):
         loss = None
         if closure is not None:
             loss = closure()
@@ -32,6 +34,7 @@ class RMISO(Optimizer):
                 # State initialization
                 if len(state) == 0:
                     state['step'] = 0
+                    # holds the current node the sampling algorithm is on
                     state['avg_grad'] = torch.zeros_like(p.data)
                     state['avg_param'] = torch.zeros_like(p.data)
 
@@ -45,32 +48,42 @@ class RMISO(Optimizer):
                         # time since last visit to each node
                         state['return_time'] = torch.zeros(self.batch_num)
 
+                node_id = self.curr_node
+
                 # compute the maximum elapsed time since each node was visited
                 if group['dynamic_step']:
                     state['return_time'].add_(torch.ones(self.batch_num))
-                    state['return_time'][batch_id] = 0
+                    state['return_time'][node_id] = 0
                     group['rho'] = torch.max(state['return_time'])
 
                 avg_grad = state['avg_grad']
                 avg_param = state['avg_param']
                 state['step'] += 1
 
-                avg_grad.add_(grad - state['old_grads'][batch_id])
+                gamma = 1/self.batch_num
+
+                avg_grad.add_(grad - state['old_grads'][node_id], alpha=gamma)
                 state['avg_grad'] = avg_grad
-                state['old_grads'][batch_id] = grad
+                state['old_grads'][node_id] = grad
 
                 param = p.data
-                avg_param.add_(param - state['old_param'][batch_id])
+                avg_param.add_(param - state['old_param'][node_id], alpha=gamma)
                 state['avg_param'] = avg_param
-                state['old_param'][batch_id] = param
+                state['old_param'][node_id] = param
 
-                param.mul_(group['rho']*group['lr'])
-                param.add_(avg_param, alpha=group['L']*group['lr'])
-                param.add_(avg_grad, alpha=-group['lr'])
+                L = 1/group['lr']
+                lmbda = 1/(L + group['rho'])
+
+                param.mul_(group['rho']*lmbda)
+                param.add_(avg_param, alpha=L*lmbda)
+                param.add_(avg_grad, alpha=-lmbda)
 
                 p.data = param
 
         return loss
+
+    def set_current_node(self, node_id):
+        self.curr_node = node_id
 
 
 

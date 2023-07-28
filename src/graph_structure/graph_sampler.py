@@ -6,7 +6,7 @@ import os
 
 
 class GraphBatchSampler(Sampler):
-    def __init__(self, data_source, algorithm="uniform", load_graph=False, initial_state=0, num_nodes=10, num_edges=10, epoch_length=100):
+    def __init__(self, data_source, algorithm="uniform", load_graph=False, initial_state=0, num_nodes=10, num_edges=10, epoch_length=None):
         self.data_source = data_source
 
         dir = os.path.join(os.getcwd(), "saved_graphs")
@@ -14,7 +14,6 @@ class GraphBatchSampler(Sampler):
         fname = "data_graph.pickle"
         path = os.path.join(dir, fname)
 
-        #TODO fix graph loading and saving with pickle
         if load_graph:
             if not os.path.exists(path):
                 raise ValueError("No saved graph available")
@@ -27,7 +26,10 @@ class GraphBatchSampler(Sampler):
                 os.remove(path)
             pickle.dump(self.graph, open(path, "wb"))
 
-        self.epoch_length = epoch_length
+        if epoch_length is not None:
+            self.epoch_length = epoch_length
+        else:
+            self.epoch_length = num_nodes
 
         if algorithm == "uniform":
             self.sampling_alg = Uniform(initial_state=initial_state, graph=self.graph)

@@ -16,7 +16,6 @@ from graph_structure.graph_sampler import GraphBatchSampler
 
 
 def get_parser():
-    #TODO: fix RMISO
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
                         choices=['uniform', 'metropolis_hastings'])
@@ -35,7 +34,6 @@ def get_parser():
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
     parser.add_argument('--dynamic_step', default=False, type=bool,
                         help='rmiso dynamic proximal regularization schedule')
-    parser.add_argument('--L', default=1, type=float, help='rmiso Lipschitz constant')
     parser.add_argument('--beta1', default=0.9, type=float, help='Adam coefficients beta_1')
     parser.add_argument('--beta2', default=0.999, type=float, help='Adam coefficients beta_2')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -122,8 +120,8 @@ def create_optimizer(args, model_params):
         return optim.Adam(model_params, args.lr, betas=(args.beta_1, args.beta_2),
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
-        # TODO: add batch_num somehow
-        return RMISO(model_params, dynamic_step=args.dynamic_step, rho=args.rho, L=args.L)
+        return RMISO(model_params, args.lr, batch_num=args.num_nodes,
+                     dynamic_step=args.dynamic_step, rho=args.rho)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas = (args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma = args.gamma,
@@ -147,8 +145,13 @@ def train(net, epoch, device, data_loader, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        optimizer.step()
-
+        if isinstance(optimizer, RMISO):
+            assert isinstance(data_loader.batch_sampler, GraphBatchSampler), "Need GraphBatchSampler to use RMISO"
+            s = data_loader.batch_sampler.get_state()
+            optimizer.set_current_node(s)
+            optimizer.step()
+        else:
+            optimizer.step()
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
@@ -186,7 +189,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader, test_loader = build_dataset()
+    train_loader, test_loader = build_dataset(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
@@ -237,9 +240,7 @@ def main():
                    os.path.join('curve', ckpt_name))
 
 
-if __name__=="__main__":
-    trainset = list(range(100))
-    batch_sampler = GraphBatchSampler(trainset, algorithm="uniform", initial_state=0,
-                                      num_nodes=10, num_edges=9)
+if __name__ == "__main__":
+    main()
 
 
