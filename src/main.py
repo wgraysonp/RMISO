@@ -115,10 +115,10 @@ def create_optimizer(args, model_params):
     elif args.optim == 'adagrad':
         return optim.Adam(model_params, args.lr, weight_decay=args.weight_decay)
     elif args.optim == 'adam':
-        return optim.Adam(model_params, args.lr, betas=(args.beta_1, args.beta_2),
+        return optim.Adam(model_params, args.lr, betas=(args.beta1, args.beta2),
                           weight_decay=args.weight_decay)
     elif args.optim == 'amsgrad':
-        return optim.Adam(model_params, args.lr, betas=(args.beta_1, args.beta_2),
+        return optim.Adam(model_params, args.lr, betas=(args.beta1, args.beta2),
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, batch_num=args.graph_size,

@@ -47,7 +47,7 @@ class Uniform:
 
     def step(self):
         N = self.graph.num_nodes
-        self.state = random.choices(list(range(N)))
+        self.state = random.choices(list(range(N))).pop()
 
 
 def test_MH():
