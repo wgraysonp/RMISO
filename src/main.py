@@ -32,13 +32,14 @@ def get_parser():
                         help='convergence speed term of Adabound')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
-    parser.add_argument('--dynamic_step', default=False, type=bool,
+    parser.add_argument('--dynamic_step', action='store_true',
                         help='rmiso dynamic proximal regularization schedule')
     parser.add_argument('--beta1', default=0.9, type=float, help='Adam coefficients beta_1')
     parser.add_argument('--beta2', default=0.999, type=float, help='Adam coefficients beta_2')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
+    parser.add_argument('--load_graph', action='store_true', help='load previously used graph')
     return parser
 
 
@@ -57,7 +58,7 @@ def build_dataset(args):
     ])
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-    batch_sampler = GraphBatchSampler(trainset, algorithm=args.sampling_algorithm, initial_state=0,
+    batch_sampler = GraphBatchSampler(trainset, load_graph=args.load_graph, algorithm=args.sampling_algorithm, initial_state=0,
                                       num_nodes=args.graph_size, num_edges=args.graph_edges)
     train_loader = DataLoader(trainset, batch_sampler=batch_sampler, num_workers=2)
 
@@ -67,9 +68,9 @@ def build_dataset(args):
     return train_loader, test_loader
 
 
-# TODO: add RMISO and its parameters
+# TODO: add stuff about graph to file name. fix L for RMISO
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
-                  rho=1, L=1):
+                  rho=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -77,9 +78,9 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'rho{}-L{}-'.format(rho, L)
+        'rmiso': 'rho{}-lr{}-'.format(rho, lr)
     }[optimizer]
-    return '{}-{}-{}'.format(model, optimizer, name)
+    return '{}-{}-{}-nodes{}-edges{}-alg{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
 
 def load_checkpoint(ckpt_name):
@@ -194,7 +195,9 @@ def main():
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
-                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma)
+                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
+                              graph_size=args.graph_size, graph_edges=args.graph_edges,
+                              sampling_alg=args.sampling_algorithm)
 
     if args.resume:
         ckpt = load_checkpoint(ckpt_name)
