@@ -17,7 +17,7 @@ class GraphBatchSampler(Sampler):
         if load_graph:
             if not os.path.exists(path):
                 raise ValueError("No saved graph available")
-            print("loading graph -- overiding num_nodes and num_edges")
+            print("loading graph -- overriding num_nodes and num_edges")
             self.graph = pickle.load(open(path, "rb"))
         else:
             source_indices = list(range(data_source.__len__()))
