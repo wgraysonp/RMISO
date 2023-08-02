@@ -19,12 +19,18 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Tune RMISO Hyperparameters on small portion of CIFAR10 data')
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
                         choices=['uniform', 'metropolis_hastings'])
+    parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
+                        choices=['rmiso', 'sgd'])
     parser.add_argument('--model', default='resnet', type=str, help='model',
                         choices=['resnet', 'densenet'])
     parser.add_argument('--lr', default=1, type=float, help='learning rate')
+    parser.add_argument('--momentum', default=0.9, type=float, help='sgd momentum')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
     parser.add_argument('--dynamic_step', action='store_true',
                         help='rmiso dynamic proximal regularization schedule')
+    parser.add_argument('--load_graph', action='store_true', help='load previously used graph')
+    parser.add_argument('--init_rmiso', action='store_true',
+                        help='do one loop over the training data to initialize rmiso gradients')
     return parser
 
 
@@ -44,10 +50,12 @@ def build_dataset(args):
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
 
-    data_subset = list(range(128*5))
+    data_subset = list(range(500))
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
-    train_loader = DataLoader(train_subset, batch_size=128, shuffle=False, num_workers=2)
+    batch_sampler = GraphBatchSampler(train_subset, load_graph=False, algorithm="uniform",
+                                      initial_state=0, num_nodes=10, num_edges=20)
+    train_loader = DataLoader(train_subset, batch_sampler=batch_sampler, num_workers=2)
 
     return train_loader
 
@@ -70,20 +78,30 @@ def build_model(args, device, ckpt=None):
 
 
 def create_optimizer(args, model_params):
-    return RMISO(model_params, args.lr, batch_num=5,
+    if args.optim == 'sgd':
+        return optim.SGD(model_params, args.lr, momentum=args.momentum)
+    elif args.optim == 'rmiso':
+        return RMISO(model_params, args.lr, batch_num=10,
                  dynamic_step=args.dynamic_step, rho=args.rho)
+    else:
+        raise ValueError("invalid optimizer")
 
 
 def initialize_optimizer(net, device, data_loader, optimizer, criterion):
     assert isinstance(optimizer, RMISO)
+    data_loader.batch_sampler.set_sequential(True)
+
     for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader)):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        optimizer.set_current_node(batch_idx)
+        s = data_loader.batch_sampler.get_state()
+        optimizer.set_current_node(s)
         optimizer.init_params()
+
+    data_loader.batch_sampler.set_sequential(False)
 
 
 def train(net, epoch, device, data_loader, optimizer, criterion):
@@ -98,8 +116,12 @@ def train(net, epoch, device, data_loader, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        optimizer.set_current_node(batch_idx)
-        optimizer.step()
+        if isinstance(optimizer, RMISO):
+            s = data_loader.batch_sampler.get_state()
+            optimizer.set_current_node(s)
+            optimizer.step()
+        else:
+            optimizer.step()
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
@@ -125,7 +147,8 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, net.parameters())
 
-    initialize_optimizer(net, device, train_loader, optimizer, criterion)
+    if args.init_rmiso:
+        initialize_optimizer(net, device, train_loader, optimizer, criterion)
 
     train_accuracies = []
 

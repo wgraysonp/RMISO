@@ -83,7 +83,6 @@ class RMISO(Optimizer):
 
                 self.grad_dict[p][self.curr_node] = grad
                 state['avg_grad'] = avg_grad
-                #state['old_grads'][node_id] = grad
 
                 param = p.data
 
@@ -95,7 +94,6 @@ class RMISO(Optimizer):
 
                 self.param_dict[p][self.curr_node] = param
                 state['avg_param'] = avg_param
-                #state['old_param'][node_id] = param
 
                 L = 1/group['lr']
                 step_size = 1/(L + group['rho'])

@@ -50,6 +50,19 @@ class Uniform:
         self.state = random.choices(list(range(N))).pop()
 
 
+class Sequential:
+
+    def __init__(self, initial_state=0, graph=None):
+        if graph is None:
+            raise ValueError("Must provide graph object")
+        self.state = initial_state
+        self.graph = graph
+
+    def step(self):
+        N = self.graph.num_nodes
+        self.state = (self.state + 1) % N
+
+
 def test_MH():
     indices = list(range(100))
     graph = Graph(indices, num_nodes=10, num_edges=20)

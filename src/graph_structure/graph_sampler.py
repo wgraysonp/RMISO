@@ -1,5 +1,5 @@
 from torch.utils.data.sampler import Sampler
-from .sampling_algorithms import Uniform, MetropolisHastings
+from .sampling_algorithms import Uniform, MetropolisHastings, Sequential
 from .graph import Graph
 import pickle
 import os
@@ -8,6 +8,8 @@ import os
 class GraphBatchSampler(Sampler):
     def __init__(self, data_source, algorithm="uniform", load_graph=False, initial_state=0, num_nodes=10, num_edges=10, epoch_length=None):
         self.data_source = data_source
+        self.alg_string = algorithm
+        self.initial_state = initial_state
 
         dir = os.path.join(os.getcwd(), "saved_graphs")
         os.makedirs(dir, exist_ok=True)
@@ -35,6 +37,8 @@ class GraphBatchSampler(Sampler):
             self.sampling_alg = Uniform(initial_state=initial_state, graph=self.graph)
         elif algorithm == "metropolis_hastings":
             self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self.graph)
+        else:
+            raise ValueError("Invalid Sampling Algorithm")
 
         self.state = self.sampling_alg.state
 
@@ -56,6 +60,16 @@ class GraphBatchSampler(Sampler):
 
     def get_state(self):
         return self.state
+
+    def set_sequential(self, set_seq):
+        if set_seq:
+            self.sampling_alg = Sequential(initial_state=0, graph=self.graph)
+        else:
+            if self.alg_string == "uniform":
+                self.sampling_alg = Uniform(initial_state=self.initial_state, graph=self.graph)
+            elif self.alg_string == "metropolis_hastings":
+                self.sampling_alg = MetropolisHastings(initial_state=self.initial_state, graph=self.graph)
+
 
 
 
