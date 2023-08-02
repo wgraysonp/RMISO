@@ -53,7 +53,7 @@ def build_dataset(args):
     data_subset = list(range(500))
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
-    batch_sampler = GraphBatchSampler(train_subset, load_graph=False, algorithm="uniform",
+    batch_sampler = GraphBatchSampler(train_subset, load_graph=args.load_graph, algorithm="uniform",
                                       initial_state=0, num_nodes=10, num_edges=20)
     train_loader = DataLoader(train_subset, batch_sampler=batch_sampler, num_workers=2)
 
@@ -152,7 +152,7 @@ def main():
 
     train_accuracies = []
 
-    for epoch in range(start_epoch + 1, 20):
+    for epoch in range(start_epoch + 1, 40):
         train_acc = train(net, epoch, device, train_loader, optimizer, criterion)
 
         train_accuracies.append(train_acc)
