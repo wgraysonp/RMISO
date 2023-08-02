@@ -125,7 +125,7 @@ class RMISO(Optimizer):
                     self.grad_dict[p][self.curr_node] = grad
 
                 if self.curr_node not in self.param_dict[p]:
-                    self.grad_dict[p][self.curr_node] = p.data
+                    self.param_dict[p][self.curr_node] = p.data
 
 
 
