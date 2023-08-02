@@ -81,7 +81,7 @@ class RMISO(Optimizer):
                 else:
                     avg_grad.add_(grad, alpha=pi)
 
-                self.grad_dict[p][self.curr_node] = grad
+                self.grad_dict[p][self.curr_node] = grad.detach().clone()
                 state['avg_grad'] = avg_grad
 
                 param = p.data
@@ -92,7 +92,7 @@ class RMISO(Optimizer):
                 else:
                     avg_param.add_(param, alpha=pi)
 
-                self.param_dict[p][self.curr_node] = param
+                self.param_dict[p][self.curr_node] = param.detach().clone()
                 state['avg_param'] = avg_param
 
                 L = 1/group['lr']
@@ -121,10 +121,10 @@ class RMISO(Optimizer):
                     self.param_dict[p] = {}
 
                 if self.curr_node not in self.grad_dict[p]:
-                    self.grad_dict[p][self.curr_node] = grad
+                    self.grad_dict[p][self.curr_node] = grad.detach().clone()
 
                 if self.curr_node not in self.param_dict[p]:
-                    self.param_dict[p][self.curr_node] = p.data
+                    self.param_dict[p][self.curr_node] = p.data.detach().clone()
 
 
 
