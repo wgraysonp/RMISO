@@ -74,6 +74,18 @@ def create_optimizer(args, model_params):
                  dynamic_step=args.dynamic_step, rho=args.rho)
 
 
+def initialize_optimizer(net, device, data_loader, optimizer, criterion):
+    assert isinstance(optimizer, RMISO)
+    for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader)):
+        inputs, targets = inputs.to(device), targets.to(device)
+        optimizer.zero_grad()
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.set_current_node(batch_idx)
+        optimizer.init_params()
+
+
 def train(net, epoch, device, data_loader, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
@@ -94,6 +106,7 @@ def train(net, epoch, device, data_loader, optimizer, criterion):
         correct += predicted.eq(targets).sum().item()
 
     accuracy = 100. * correct/total
+    print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
 
     return accuracy
@@ -111,6 +124,8 @@ def main():
     net = build_model(args, device, ckpt=None)
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, net.parameters())
+
+    initialize_optimizer(net, device, train_loader, optimizer, criterion)
 
     train_accuracies = []
 

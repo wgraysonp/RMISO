@@ -47,8 +47,17 @@ class RMISO(Optimizer):
                 # State initialization
                 if len(state) == 0:
                     state['step'] = 0
-                    state['avg_grad'] = torch.zeros_like(p.data)
-                    state['avg_param'] = torch.zeros_like(p.data)
+                    if self.grad_dict[p]:
+                        grad_list = list(self.grad_dict[p].values())
+                        state['avg_grad'] = torch.mean(torch.stack(grad_list), dim=0)
+                    else:
+                        state['avg_grad'] = torch.zeros_like(p.data)
+
+                    if self.param_dict[p]:
+                        param_list = list(self.param_dict[p].values())
+                        state['avg_param'] = torch.mean(torch.stack(param_list), dim=0)
+                    else:
+                        state['avg_param'] = torch.zeros_like(p.data)
 
                     if group['dynamic_step']:
                         # time since last visit to each node
@@ -98,6 +107,27 @@ class RMISO(Optimizer):
 
     def set_current_node(self, node_id):
         self.curr_node = node_id
+
+    def init_params(self):
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+
+                if p not in self.grad_dict:
+                    self.grad_dict[p] = {}
+
+                if p not in self.param_dict:
+                    self.param_dict[p] = {}
+
+                if self.curr_node not in self.grad_dict[p]:
+                    self.grad_dict[p][self.curr_node] = grad
+
+                if self.curr_node not in self.param_dict[p]:
+                    self.grad_dict[p][self.curr_node] = p.data
+
+
 
 
 
