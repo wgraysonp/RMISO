@@ -93,6 +93,7 @@ class RMISO(Optimizer):
                 else:
                     avg_param.add_(param, alpha=pi)
 
+                self.param_dict[p][self.curr_node] = param
                 state['avg_param'] = avg_param
                 #state['old_param'][node_id] = param
 
