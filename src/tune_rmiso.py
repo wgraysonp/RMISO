@@ -103,7 +103,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader, test_loader = build_dataset(args)
+    train_loader = build_dataset(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     start_epoch = -1
