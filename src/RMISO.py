@@ -78,7 +78,7 @@ class RMISO(Optimizer):
 
                 param = p.data
 
-                if self.curr_node in self.param_dict[p][self.curr_node]:
+                if self.curr_node in self.param_dict[p]:
                     last_param = self.param_dict[p][self.curr_node]
                     avg_param.add_(param - last_param, alpha=pi)
                 else:
