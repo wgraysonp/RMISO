@@ -101,7 +101,7 @@ class RMISO(Optimizer):
                 p.data.mul_(group['rho']*step_size)
                 p.data.add_(avg_param, alpha=L*step_size)
                 p.data.add_(-avg_grad, alpha=step_size)
-
+               
         return loss
 
     def set_current_node(self, node_id):
