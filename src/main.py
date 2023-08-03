@@ -60,12 +60,13 @@ def build_dataset(args):
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
     batch_sampler = GraphBatchSampler(trainset, load_graph=args.load_graph, algorithm=args.sampling_algorithm,
                                       initial_state=0, num_nodes=args.graph_size, num_edges=args.graph_edges)
+    num_nodes = len(batch_sampler)
     train_loader = DataLoader(trainset, batch_sampler=batch_sampler, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     test_loader = DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-    return train_loader, test_loader
+    return train_loader, num_nodes, test_loader
 
 
 # TODO: add stuff about graph to file name. fix L for RMISO
@@ -108,7 +109,7 @@ def build_model(args, device, ckpt=None):
     return net
 
 
-def create_optimizer(args, model_params):
+def create_optimizer(args, num_nodes, model_params):
     if args.optim == 'sgd':
         return optim.SGD(model_params, args.lr, momentum=args.momentum,
                          weight_decay=args.weight_decay)
@@ -121,7 +122,7 @@ def create_optimizer(args, model_params):
         return optim.Adam(model_params, args.lr, betas=(args.beta1, args.beta2),
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
-        return RMISO(model_params, args.lr, batch_num=args.graph_size,
+        return RMISO(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
@@ -190,7 +191,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader, test_loader = build_dataset(args)
+    train_loader, num_nodes, test_loader = build_dataset(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
@@ -211,7 +212,7 @@ def main():
 
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.CrossEntropyLoss()
-    optimizer = create_optimizer(args, net.parameters())
+    optimizer = create_optimizer(args, num_nodes, net.parameters())
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1,
                                           last_epoch=start_epoch)
 

@@ -90,6 +90,7 @@ def test():
 
     print(set(test_list))
     print(graph.edge_count)
+    print(graph.nodes[9].data)
 
 
 if __name__ == "__main__":

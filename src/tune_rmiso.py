@@ -56,8 +56,9 @@ def build_dataset(args):
     batch_sampler = GraphBatchSampler(train_subset, load_graph=args.load_graph, algorithm="uniform",
                                       initial_state=0, num_nodes=10, num_edges=20)
     train_loader = DataLoader(train_subset, batch_sampler=batch_sampler, num_workers=2)
+    num_nodes = len(batch_sampler)
 
-    return train_loader
+    return train_loader, num_nodes
 
 
 def build_model(args, device, ckpt=None):
@@ -77,12 +78,12 @@ def build_model(args, device, ckpt=None):
     return net
 
 
-def create_optimizer(args, model_params):
+def create_optimizer(args, num_nodes, model_params):
     if args.optim == 'sgd':
         return optim.SGD(model_params, args.lr, momentum=args.momentum)
     elif args.optim == 'rmiso':
-        return RMISO(model_params, args.lr, batch_num=10,
-                 dynamic_step=args.dynamic_step, rho=args.rho)
+        return RMISO(model_params, args.lr, num_nodes=num_nodes,
+                     dynamic_step=args.dynamic_step, rho=args.rho)
     else:
         raise ValueError("invalid optimizer")
 
@@ -138,14 +139,14 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader = build_dataset(args)
+    train_loader, num_nodes = build_dataset(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     start_epoch = -1
 
     net = build_model(args, device, ckpt=None)
     criterion = nn.CrossEntropyLoss()
-    optimizer = create_optimizer(args, net.parameters())
+    optimizer = create_optimizer(args, num_nodes, net.parameters())
 
     if args.init_rmiso:
         initialize_optimizer(net, device, train_loader, optimizer, criterion)

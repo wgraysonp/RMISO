@@ -4,7 +4,7 @@ from torch.optim import Optimizer
 
 class RMISO(Optimizer):
 
-    def __init__(self, params, lr, batch_num=10, dynamic_step=False, rho=1):
+    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1):
         # lr is 1/L where L is lipshitz constant. Store it this way so that the learning rate scheduler can be used
         if not 0.0 <= rho:
             raise ValueError("Invalid regularization parameter: {}".format(rho))
@@ -12,7 +12,7 @@ class RMISO(Optimizer):
             raise ValueError("Invalid learning rate: {}".format(lr))
         defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho)
         super(RMISO, self).__init__(params, defaults)
-        self.batch_num = batch_num
+        self.num_nodes = num_nodes
         self.curr_node = 0
 
         # dictionary to store past gradients and parameters
@@ -73,7 +73,7 @@ class RMISO(Optimizer):
                 avg_param = state['avg_param']
                 state['step'] += 1
 
-                pi = 1/self.batch_num
+                pi = 1/self.num_nodes
 
                 if self.curr_node in self.grad_dict[p]:
                     last_grad = self.grad_dict[p][self.curr_node]
@@ -101,7 +101,7 @@ class RMISO(Optimizer):
                 p.data.mul_(group['rho']*step_size)
                 p.data.add_(avg_param, alpha=L*step_size)
                 p.data.add_(-avg_grad, alpha=step_size)
-               
+
         return loss
 
     def set_current_node(self, node_id):
