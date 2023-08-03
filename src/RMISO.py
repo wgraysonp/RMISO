@@ -51,13 +51,15 @@ class RMISO(Optimizer):
                         grad_list = list(self.grad_dict[p].values())
                         state['avg_grad'] = torch.mean(torch.stack(grad_list), dim=0)
                     else:
-                        state['avg_grad'] = p.grad.data.detach().clone()
+                       # state['avg_grad'] = p.grad.data.detach().clone()
+                        state['avg_grad'] = torch.zeros_like(p.data)
 
                     if self.param_dict[p]:
                         param_list = list(self.param_dict[p].values())
                         state['avg_param'] = torch.mean(torch.stack(param_list), dim=0)
                     else:
-                        state['avg_param'] = p.data.detach().clone()
+                       # state['avg_param'] = p.data.detach().clone()
+                        state['avg_param'] = torch.zeros_like(p.data)
 
                     if group['dynamic_step']:
                         # time since last visit to each node

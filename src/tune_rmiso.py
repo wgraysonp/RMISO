@@ -53,9 +53,8 @@ def build_dataset(args):
     data_subset = list(range(500))
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
-    batch_sampler = GraphBatchSampler(train_subset, load_graph=args.load_graph, algorithm="metropolis_hastings",
-                                      initial_state=0, num_nodes=10, num_edges=40)
-    train_loader = DataLoader(train_subset, batch_sampler=batch_sampler, num_workers=2)
+    batch_sampler = GraphBatchSampler(train_subset, load_graph=args.load_graph, algorithm="uniform", initial_state=0, num_nodes=10, num_edges=40)
+    train_loader = DataLoader(train_subset, batch_sampler=batch_sampler, num_workers=0)
     num_nodes = len(batch_sampler)
 
     return train_loader, num_nodes
@@ -111,7 +110,7 @@ def train(net, epoch, device, data_loader, optimizer, criterion):
     train_loss = 0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(data_loader):
+    for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader)):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)

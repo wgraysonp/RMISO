@@ -48,7 +48,6 @@ class Uniform:
     def step(self):
         N = self.graph.num_nodes
         self.state = random.choices(list(range(N))).pop()
-        print("alg state: {}".format(self.state))
 
 
 class Sequential:
