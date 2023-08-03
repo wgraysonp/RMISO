@@ -51,21 +51,21 @@ class RMISO(Optimizer):
                         grad_list = list(self.grad_dict[p].values())
                         state['avg_grad'] = torch.mean(torch.stack(grad_list), dim=0)
                     else:
-                        state['avg_grad'] = torch.zeros_like(p.data)
+                        state['avg_grad'] = p.grad.data.detach().clone()
 
                     if self.param_dict[p]:
                         param_list = list(self.param_dict[p].values())
                         state['avg_param'] = torch.mean(torch.stack(param_list), dim=0)
                     else:
-                        state['avg_param'] = torch.zeros_like(p.data)
+                        state['avg_param'] = p.data.detach().clone()
 
                     if group['dynamic_step']:
                         # time since last visit to each node
-                        state['return_time'] = torch.zeros(self.batch_num)
+                        state['return_time'] = torch.zeros(self.num_nodes)
 
                 # compute the maximum elapsed time since each node was visited
                 if group['dynamic_step']:
-                    state['return_time'].add_(torch.ones(self.batch_num))
+                    state['return_time'].add_(torch.ones(self.num_nodes))
                     state['return_time'][self.curr_node] = 0
                     group['rho'] = torch.max(state['return_time'])
 

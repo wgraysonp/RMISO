@@ -25,7 +25,7 @@ class Graph:
         self.num_nodes = num_nodes
         self.num_edges = num_edges
         self.edge_count = 0
-        random.shuffle(indices)
+       # random.shuffle(indices)
         self.nodes = {}
 
         # partition the indices into batches of size len(indices)/num_nodes and assign them to nodes
