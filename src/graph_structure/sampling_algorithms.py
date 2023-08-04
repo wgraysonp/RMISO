@@ -1,5 +1,5 @@
 from torch import tensor
-from graph import Graph
+#from graph import Graph
 #import data_graph
 import matplotlib.pyplot as plt
 import random
