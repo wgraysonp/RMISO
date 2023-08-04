@@ -12,7 +12,7 @@ from models import *
 from RMISO import RMISO
 from adabound import AdaBound
 
-from graph_structure.graph_sampler import GraphBatchSampler
+from graph_structure.data_graph import DataGraph
 
 
 def get_parser():
@@ -53,11 +53,9 @@ def build_dataset(args):
     data_subset = list(range(500))
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
-    batch_sampler = GraphBatchSampler(train_subset, load_graph=args.load_graph, algorithm="uniform", initial_state=0, num_nodes=10, num_edges=40)
-    train_loader = DataLoader(train_subset, batch_sampler=batch_sampler, num_workers=0)
-    num_nodes = len(batch_sampler)
 
-    return train_loader, num_nodes
+    graph = DataGraph(train_subset, num_nodes=10, num_edges=30, algorithm=args.sampling_algorithm)
+    return graph
 
 
 def build_model(args, device, ckpt=None):
@@ -104,30 +102,33 @@ def initialize_optimizer(net, device, data_loader, optimizer, criterion):
     data_loader.batch_sampler.set_sequential(False)
 
 
-def train(net, epoch, device, data_loader, optimizer, criterion):
+def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader)):
+    n_iter = len(graph.nodes)
+
+    for _ in tqdm(range(n_iter)):
+        node_id = graph.sample()
+        loader = graph.nodes[node_id]['loader']
+        assert len(loader) == 1, f"Data loader at node {node_id} has more than one batch"
+        (inputs, targets) = next(loader)
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
         if isinstance(optimizer, RMISO):
-            s = data_loader.batch_sampler.get_state()
-            optimizer.set_current_node(s)
-            optimizer.step()
-        else:
-            optimizer.step()
+            optimizer.set_current_node(node_id)
+        optimizer.step()
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-    accuracy = 100. * correct/total
+    accuracy = 100. * correct / total
     print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
 
@@ -138,7 +139,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader, num_nodes = build_dataset(args)
+    graph = build_dataset(args)
+    num_nodes = len(graph.nodes)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     start_epoch = -1
@@ -147,13 +149,10 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
 
-    if args.init_rmiso:
-        initialize_optimizer(net, device, train_loader, optimizer, criterion)
-
     train_accuracies = []
 
     for epoch in range(start_epoch + 1, 40):
-        train_acc = train(net, epoch, device, train_loader, optimizer, criterion)
+        train_acc = train(net, epoch, device, graph, optimizer, criterion)
 
         train_accuracies.append(train_acc)
 
