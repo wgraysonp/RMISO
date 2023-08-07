@@ -98,7 +98,7 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'rmiso': 'rho{}-lr{}-'.format(rho, lr)
     }[optimizer]
-    return '{}-{}-{}-nodes{}-edges{}-alg{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
+    return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
 
 def load_checkpoint(ckpt_name):
@@ -213,13 +213,14 @@ def main():
 
     graph_loader, test_loader = build_dataset(args)
     num_nodes = len(graph_loader.nodes)
+    num_edges = len(graph_loader.edges)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
-                              graph_size=args.graph_size, rho=args.rho,
-                              graph_edges=args.graph_edges,
+                              graph_size=num_nodes, rho=args.rho,
+                              graph_edges=num_edges,
                               sampling_alg=args.sampling_algorithm)
 
     if args.resume:
