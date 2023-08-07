@@ -50,7 +50,7 @@ def build_dataset(args):
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
 
-    data_subset = list(range(500))
+    data_subset = list(range(1000))
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
 
@@ -114,7 +114,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
         node_id = graph.sample()
         loader = graph.nodes[node_id]['loader']
         assert len(loader) == 1, f"Data loader at node {node_id} has more than one batch"
-        (inputs, targets) = next(loader)
+        (inputs, targets) = next(iter(loader))
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
@@ -151,7 +151,7 @@ def main():
 
     train_accuracies = []
 
-    for epoch in range(start_epoch + 1, 40):
+    for epoch in range(start_epoch + 1, 200):
         train_acc = train(net, epoch, device, graph, optimizer, criterion)
 
         train_accuracies.append(train_acc)

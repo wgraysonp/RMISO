@@ -19,10 +19,6 @@ class DataGraph(nx.Graph):
             raise ValueError("Invalid sampling algorithm")
 
         super().__init__()
-        if algorithm == 'uniform':
-            self.sampling_alg = Uniform(initial_state=0, graph=self)
-        elif algorithm == 'metropolis_hastings':
-            self.sampling_alg = MetropolisHastings(initial_state=0, graph=self)
 
         self.data_set = data_set
         self.num_nodes = num_nodes
@@ -30,6 +26,11 @@ class DataGraph(nx.Graph):
 
         self._create_nodes()
         self._connect_graph()
+
+        if algorithm == 'uniform':
+            self.sampling_alg = Uniform(initial_state=0, graph=self)
+        elif algorithm == 'metropolis_hastings':
+            self.sampling_alg = MetropolisHastings(initial_state=0, graph=self)
 
     def _create_nodes(self):
         N = len(self.data_set)
@@ -42,7 +43,7 @@ class DataGraph(nx.Graph):
                 data_idx = idxs[m*i:m*(i+1)]
             batch_size = len(data_idx)
             data_subset = Subset(self.data_set, data_idx)
-            loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=2)
+            loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
             self.add_node(i, data=idxs[m * i:], loader=loader)
 
     def _connect_graph(self):
