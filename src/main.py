@@ -12,7 +12,7 @@ from models import *
 from RMISO import RMISO
 from adabound import AdaBound
 
-from graph_structure.graph_sampler import GraphBatchSampler
+from graph_structure.data_graph import DataGraph
 
 
 def get_parser():
@@ -58,15 +58,12 @@ def build_dataset(args):
     ])
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-    batch_sampler = GraphBatchSampler(trainset, load_graph=args.load_graph, algorithm=args.sampling_algorithm,
-                                      initial_state=0, num_nodes=args.graph_size, num_edges=args.graph_edges)
-    num_nodes = len(batch_sampler)
-    train_loader = DataLoader(trainset, batch_sampler=batch_sampler, num_workers=2)
+    graph = DataGraph(trainset, num_nodes=args.graph_size, num_edges=args.num_edges, algorithm=args.sampling_algorithm)
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     test_loader = DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-    return train_loader, num_nodes, test_loader
+    return graph, test_loader
 
 
 # TODO: add stuff about graph to file name. fix L for RMISO
@@ -135,31 +132,34 @@ def create_optimizer(args, num_nodes, model_params):
                         weight_decay=args.weight_decay, amsbound=True)
 
 
-def train(net, epoch, device, data_loader, optimizer, criterion):
+def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
-    for bath_idx, (inputs, targets) in enumerate(tqdm(data_loader)):
+    n_iter = len(graph.nodes)
+
+    for _ in tqdm(range(n_iter)):
+        node_id = graph.sample()
+        loader = graph.nodes[node_id]['loader']
+        assert len(loader) == 1, f"Data loader at node {node_id} has more than one batch"
+        (inputs, targets) = next(iter(loader))
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
         if isinstance(optimizer, RMISO):
-            assert isinstance(data_loader.batch_sampler, GraphBatchSampler), "Need GraphBatchSampler to use RMISO"
-            s = data_loader.batch_sampler.get_state()
-            optimizer.set_current_node(s)
-            optimizer.step()
-        else:
-            optimizer.step()
+            optimizer.set_current_node(node_id)
+        optimizer.step()
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-    accuracy = 100. * correct/total
+    accuracy = 100. * correct / total
+    print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
 
     return accuracy
@@ -191,7 +191,8 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader, num_nodes, test_loader = build_dataset(args)
+    graph_loader, test_loader = build_dataset(args)
+    num_nodes = len(graph_loader.nodes)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
@@ -221,7 +222,7 @@ def main():
 
     for epoch in range(start_epoch + 1, 200):
         scheduler.step()
-        train_acc = train(net, epoch, device, train_loader, optimizer, criterion)
+        train_acc = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc = test(net, device, test_loader, criterion)
 
         # Save checkpoint.
