@@ -7,6 +7,8 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 import os
 import argparse
+import pickle
+import sys
 
 from models import *
 from RMISO import RMISO
@@ -57,11 +59,29 @@ def build_dataset(args):
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-    graph = DataGraph(trainset, num_nodes=args.graph_size, num_edges=args.num_edges, algorithm=args.sampling_algorithm)
+    directory = os.path.join(os.getcwd(), "saved_graphs")
+    os.makedirs(directory, exist_ok=True)
+    f_name = "data_graph.pickle"
+    path = os.path.join(directory, f_name)
 
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-    test_loader = DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
+    if args.load_graph:
+        try:
+            graph = pickle.load(open(path, 'rb'))
+            assert isinstance(graph, DataGraph), "Graph loaded is not the correct object."
+            print("Loading Graph-over-riding graph topology arguments")
+        except FileNotFoundError:
+            print("No graph available to load")
+            sys.exit(1)
+    else:
+        train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
+        graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.num_edges,
+                          algorithm=args.sampling_algorithm)
+        if os.path.exists(path):
+            os.remove(path)
+        pickle.dump(graph, open(path, 'wb'))
+
+    test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
 
     return graph, test_loader
 
