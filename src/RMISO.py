@@ -51,14 +51,14 @@ class RMISO(Optimizer):
                         grad_list = list(self.grad_dict[p].values())
                         state['avg_grad'] = torch.mean(torch.stack(grad_list), dim=0)
                     else:
-                        #state['avg_grad'] = p.grad.data
+                        #state['avg_grad'] = p.grad.data.detach().clone()
                         state['avg_grad'] = torch.zeros_like(p.data)
 
                     if self.param_dict[p]:
                         param_list = list(self.param_dict[p].values())
                         state['avg_param'] = torch.mean(torch.stack(param_list), dim=0)
                     else:
-                        #state['avg_param'] = p.data
+                        #state['avg_param'] = p.data.detach().clone()
                         state['avg_param'] = torch.zeros_like(p.data)
 
                     if group['dynamic_step']:
@@ -84,6 +84,7 @@ class RMISO(Optimizer):
                     avg_grad.add_(grad, alpha=pi)
 
                 self.grad_dict[p][self.curr_node] = grad.detach().clone()
+                #self.grad_dict[p][self.curr_node] = p.grad.data
                 state['avg_grad'] = avg_grad
 
                 #print("grad_dict: {}".format(self.grad_dict[p]))
@@ -98,6 +99,7 @@ class RMISO(Optimizer):
                     avg_param.add_(param, alpha=pi)
 
                 self.param_dict[p][self.curr_node] = param.detach().clone()
+                #self.param_dict[p][self.curr_node] = p.data
                 state['avg_param'] = avg_param
 
                 L = 1/group['lr']

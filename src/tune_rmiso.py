@@ -10,6 +10,7 @@ import argparse
 
 from models import *
 from RMISO import RMISO
+from MCSAG import MCSAG
 from adabound import AdaBound
 
 from graph_structure.data_graph import DataGraph
@@ -80,6 +81,9 @@ def create_optimizer(args, num_nodes, model_params):
         return optim.SGD(model_params, args.lr, momentum=args.momentum)
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
+                     dynamic_step=args.dynamic_step, rho=args.rho)
+    elif args.optim == 'mcsag':
+        return MCSAG(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho)
     else:
         raise ValueError("invalid optimizer")
