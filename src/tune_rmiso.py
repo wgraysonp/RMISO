@@ -21,7 +21,7 @@ def get_parser():
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
                         choices=['uniform', 'metropolis_hastings'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
-                        choices=['rmiso', 'sgd'])
+                        choices=['rmiso', 'sgd', 'mcsag'])
     parser.add_argument('--model', default='resnet', type=str, help='model',
                         choices=['resnet', 'densenet'])
     parser.add_argument('--lr', default=1, type=float, help='learning rate')
@@ -89,22 +89,20 @@ def create_optimizer(args, num_nodes, model_params):
         raise ValueError("invalid optimizer")
 
 
-def initialize_optimizer(net, device, data_loader, optimizer, criterion):
+def initialize_optimizer(net, device, graph, optimizer, criterion):
     assert isinstance(optimizer, RMISO)
-    data_loader.batch_sampler.set_sequential(True)
-
-    for batch_idx, (inputs, targets) in enumerate(tqdm(data_loader)):
+    print("== initializing gradients")
+    n_iter = len(graph.nodes)
+    for i in range(n_iter):
+        loader = graph.nodes[i]['loader']
+        assert len(loader)==1
+        (inputs, targets) = next(iter(loader))
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        s = data_loader.batch_sampler.get_state()
-        optimizer.set_current_node(s)
         optimizer.init_params()
-
-    data_loader.batch_sampler.set_sequential(False)
-
 
 def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
@@ -152,6 +150,9 @@ def main():
     net = build_model(args, device, ckpt=None)
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
+    
+    if args.init_rmiso:
+        initialize_optimizer(net, device, graph, optimizer, criterion)
 
     train_accuracies = []
 
