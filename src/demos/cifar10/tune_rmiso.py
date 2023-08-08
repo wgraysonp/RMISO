@@ -1,19 +1,16 @@
-import torch
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
 from tqdm import tqdm
-import os
 import argparse
 
-from models import *
-from RMISO import RMISO
-from MCSAG import MCSAG
-from adabound import AdaBound
+from src.demos.cifar10.models import *
+from src.custom_optimizers.RMISO import RMISO
+from src.custom_optimizers.MCSAG import MCSAG
 
-from graph_structure.data_graph import DataGraph
+from src.graph_structure.data_graph import DataGraph
 
 
 def get_parser():

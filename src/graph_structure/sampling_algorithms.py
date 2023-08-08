@@ -63,37 +63,3 @@ class Sequential:
         N = self.graph.num_nodes
         self.state = (self.state + 1) % N
 
-
-def test_MH():
-    indices = list(range(100))
-    graph = data_graph.DataGraph(indices, num_nodes=10, num_edges=40)
-    mh_sampler = MetropolisHastings(initial_state=0, graph=graph)
-    states = np.zeros(10)
-    states[0] = 1
-    for i in range(1, 100):
-        mh_sampler.step()
-        states = states * (i/(i+1))
-        states[mh_sampler.state] +=1/(i+1)
-
-    plt.bar(list(range(10)), states)
-    plt.show()
-
-
-def test_uniform():
-    indices = list(range(100))
-    graph = data_graph.DataGraph(indices, num_nodes=10, num_edges=20)
-    uniform_sampler = Uniform(initial_state=0, graph=graph)
-    states = np.zeros(10)
-    states[0] = 1
-    for i in range(1, 1000):
-        uniform_sampler.step()
-        states = states *(i/(i+1))
-        states[uniform_sampler.state] += 1/(i+1)
-
-    plt.bar(list(range(10)), states)
-    plt.show()
-
-
-if __name__ == "__main__":
-    test_MH()
-    test_uniform()
