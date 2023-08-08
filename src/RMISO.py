@@ -4,13 +4,15 @@ from torch.optim import Optimizer
 
 class RMISO(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1):
+    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1, delta=1e-5):
         # lr is 1/L where L is lipshitz constant. Store it this way so that the learning rate scheduler can be used
         if not 0.0 <= rho:
             raise ValueError("Invalid regularization parameter: {}".format(rho))
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
-        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho)
+        if not dynamic_step:
+            delta = 1
+        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta)
         super(RMISO, self).__init__(params, defaults)
         self.num_nodes = num_nodes
         self.curr_node = 0
@@ -34,9 +36,8 @@ class RMISO(Optimizer):
                 grad = p.grad.data
                 state = self.state[p]
 
-                # TODO: Maybe change this to account for initial surrogates?
-                # initalize lagged parameters and gradients to store the parameter
-                # and gradient at the time of the last visit to each function by
+                # initialize lagged dict to store the parameter
+                # and gradient at the time of the last visit to each node by
                 # sampling algorithm
                 if p not in self.grad_dict:
                     self.grad_dict[p] = {}
@@ -51,14 +52,12 @@ class RMISO(Optimizer):
                         grad_list = list(self.grad_dict[p].values())
                         state['avg_grad'] = torch.mean(torch.stack(grad_list), dim=0)
                     else:
-                        #state['avg_grad'] = p.grad.data.detach().clone()
                         state['avg_grad'] = torch.zeros_like(p.data)
 
                     if self.param_dict[p]:
                         param_list = list(self.param_dict[p].values())
                         state['avg_param'] = torch.mean(torch.stack(param_list), dim=0)
                     else:
-                        #state['avg_param'] = p.data.detach().clone()
                         state['avg_param'] = torch.zeros_like(p.data)
 
                     if group['dynamic_step']:
@@ -84,11 +83,7 @@ class RMISO(Optimizer):
                     avg_grad.add_(grad, alpha=pi)
 
                 self.grad_dict[p][self.curr_node] = grad.detach().clone()
-                #self.grad_dict[p][self.curr_node] = p.grad.data
                 state['avg_grad'] = avg_grad
-
-                #print("grad_dict: {}".format(self.grad_dict[p]))
-                #print("avg_grad: {}".format(avg_grad))
 
                 param = p.data
 
@@ -99,13 +94,12 @@ class RMISO(Optimizer):
                     avg_param.add_(param, alpha=pi)
 
                 self.param_dict[p][self.curr_node] = param.detach().clone()
-                #self.param_dict[p][self.curr_node] = p.data
                 state['avg_param'] = avg_param
 
                 L = 1/group['lr']
-                step_size = 1/(L + group['rho'])
+                step_size = 1/(L + group['delta']*group['rho'])
 
-                p.data.mul_(group['rho']*step_size)
+                p.data.mul_(group['delta']*group['rho']*step_size)
                 p.data.add_(avg_param, alpha=L*step_size)
                 p.data.add_(-avg_grad, alpha=step_size)
 

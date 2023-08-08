@@ -90,7 +90,7 @@ def create_optimizer(args, num_nodes, model_params):
 
 
 def initialize_optimizer(net, device, graph, optimizer, criterion):
-    assert isinstance(optimizer, RMISO)
+    assert isinstance(optimizer, (RMISO, MCSAG))
     print("== initializing gradients")
     n_iter = len(graph.nodes)
     for i in range(n_iter):
@@ -102,7 +102,9 @@ def initialize_optimizer(net, device, graph, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
+        optimizer.set_current_node(i)
         optimizer.init_params()
+
 
 def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
@@ -122,7 +124,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        if isinstance(optimizer, RMISO):
+        if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()

@@ -61,7 +61,7 @@ class MCSAG(Optimizer):
                     group['rho'] = torch.max(state['return_time'])
 
                 avg_grad = state['avg_grad']
-                state['step'] +=1
+                state['step'] += 1
 
                 pi = 1/self.num_nodes
 
@@ -75,7 +75,7 @@ class MCSAG(Optimizer):
                 state['avg_grad'] = avg_grad
 
                 L = 1/group['lr']
-                t = 10*self.num_nodes
+                t = self.num_nodes
                 #TODO: Need to add t_mix where t is
                 denom = 2*L*(t + group['rho'])
                 step_size = 1/denom
@@ -83,3 +83,19 @@ class MCSAG(Optimizer):
                 p.data.add_(-avg_grad, alpha=step_size)
 
         return loss
+
+    def set_current_node(self, node_id):
+        self.curr_node = node_id
+
+    def init_params(self):
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+
+                if p not in self.grad_dict:
+                    self.grad_dict[p] = {}
+
+                if self.curr_node not in self.grad_dict[p]:
+                    self.grad_dict[p][self.curr_node] = grad.detach().clone()
