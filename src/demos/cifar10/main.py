@@ -9,11 +9,11 @@ import argparse
 import pickle
 import sys
 
-from src.demos.cifar10.models import *
-from src.custom_optimizers.RMISO import RMISO
+from models import *
+from custom_optimizers import *
 from adabound import AdaBound
 
-from src.graph_structure.data_graph import DataGraph
+from graph_structure.data_graph import DataGraph
 
 
 def get_parser():
@@ -73,7 +73,7 @@ def build_dataset(args):
             sys.exit(1)
     else:
         train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-        graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.num_edges,
+        graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
                           algorithm=args.sampling_algorithm)
         if os.path.exists(path):
             os.remove(path)
