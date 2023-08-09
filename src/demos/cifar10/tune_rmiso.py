@@ -6,11 +6,10 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 import argparse
 
-from src.demos.cifar10.models import *
-from src.custom_optimizers.RMISO import RMISO
-from src.custom_optimizers.MCSAG import MCSAG
-
-from src.graph_structure.data_graph import DataGraph
+from models import *
+from custom_optimizers.RMISO import RMISO
+from custom_optimizers.MCSAG import MCSAG
+from graph_structure.data_graph import DataGraph
 
 
 def get_parser():
