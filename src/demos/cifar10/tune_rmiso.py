@@ -91,7 +91,7 @@ def initialize_optimizer(net, device, graph, optimizer, criterion):
     n_iter = len(graph.nodes)
     for i in range(n_iter):
         loader = graph.nodes[i]['loader']
-        assert len(loader)==1
+        assert len(loader) == 1
         (inputs, targets) = next(iter(loader))
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()

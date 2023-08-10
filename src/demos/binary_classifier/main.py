@@ -1,31 +1,31 @@
+import torch
 import torch.optim as optim
+import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
-import torchvision
-import torchvision.transforms as transforms
 from tqdm import tqdm
 import os
 import argparse
 import pickle
 import sys
 
-from models import *
-from custom_optimizers import *
 from adabound import AdaBound
-
+from models import TwoLayer, OneLayer
+from custom_optimizers import *
 from graph_structure.data_graph import DataGraph
+from datasets import CovType
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
+    parser = argparse.ArgumentParser(description="Binary Classifier Training")
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
                         choices=['uniform', 'metropolis_hastings'])
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
-    parser.add_argument('--model', default='resnet', type=str, help='model',
-                        choices=['resnet', 'densenet'])
+    parser.add_argument('--model', default='one_layer', type=str, help='model',
+                        choices=['one_layer', 'two_layer'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
-                        choices=['rmiso', 'sgd', 'adagrad', 'adam', 'amsgrad', 'adabound', 'amsbound'])
+                        choices=['rmiso', 'mcsag', 'sgd', 'adagrad', 'adam', 'amsgrad', 'adabound', 'amsbound'])
     parser.add_argument('--lr', default=1, type=float, help='learning rate')
     parser.add_argument('--final_lr', default=0.1, type=float,
                         help='final learning rate of AdaBound')
@@ -45,18 +45,7 @@ def get_parser():
 
 
 def build_dataset(args):
-    print('==> Preparing data..')
-    transform_trane = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
-
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    print('== Preparing data..')
 
     directory = os.path.join(os.getcwd(), "saved_graphs")
     os.makedirs(directory, exist_ok=True)
@@ -72,21 +61,21 @@ def build_dataset(args):
             print("No graph available to load")
             sys.exit(1)
     else:
-        train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
+        train_set = CovType(train=True)
         graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
                           algorithm=args.sampling_algorithm)
         if os.path.exists(path):
             os.remove(path)
         pickle.dump(graph, open(path, 'wb'))
 
-    test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+    test_set = CovType(train=False)
     test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
 
     return graph, test_loader
 
 
-def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
-                  rho=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
+def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
+                  gamma=1e-3, rho=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -94,8 +83,10 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'rho{}-lr{}-'.format(rho, lr)
+        'rmiso': 'rho{}-lr{}-'.format(rho, lr),
+        'mcsag': 'rho{}-lr{}-'.format(rho, lr),
     }[optimizer]
+
     return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
 
@@ -110,8 +101,8 @@ def load_checkpoint(ckpt_name):
 def build_model(args, device, ckpt=None):
     print('==> Building model..')
     net = {
-        'resnet': ResNet34,
-        'densenet': DenseNet121
+        'one_layer': OneLayer,
+        'two_layer': TwoLayer
     }[args.model]()
     net = net.to(device)
     if device == 'cuda':
@@ -139,6 +130,9 @@ def create_optimizer(args, num_nodes, model_params):
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho)
+    elif args.optim == 'mcsag':
+        return MCSAG(model_params, args.lr, num_nodes=num_nodes,
+                     dynamic_step=args.dynamic_step, rho=args.rho)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma=args.gamma,
@@ -151,7 +145,7 @@ def create_optimizer(args, num_nodes, model_params):
 
 
 def train(net, epoch, device, graph, optimizer, criterion):
-    print('\nEpoch: %d' % epoch)
+    print('\nEpoch: % epoch')
     net.train()
     train_loss = 0
     correct = 0
@@ -172,7 +166,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()
-        _, predicted = outputs.max(1)
+        predicted = (outputs > 0.5).float()
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
@@ -195,7 +189,7 @@ def test(net, device, data_loader, criterion):
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
-            _, predicted = outputs.max(1)
+            predicted = (outputs > 0.5).float()
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
@@ -217,8 +211,7 @@ def main():
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
-                              graph_size=num_nodes, rho=args.rho,
-                              graph_edges=num_edges,
+                              graph_size=num_nodes, rho=args.rho, graph_edges=num_edges,
                               sampling_alg=args.sampling_algorithm)
 
     if args.resume:
@@ -231,22 +224,19 @@ def main():
         start_epoch = -1
 
     net = build_model(args, device, ckpt=ckpt)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1,
-                                          last_epoch=start_epoch)
 
     train_accuracies = []
     test_accuracies = []
 
     for epoch in range(start_epoch + 1, 200):
-        scheduler.step()
         train_acc = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc = test(net, device, test_loader, criterion)
 
-        # Save checkpoint.
+        # Save checkpoint
         if test_acc > best_acc:
-            print('Saving..')
+            print('Saving...')
             state = {
                 'net': net.state_dict(),
                 'acc': test_acc,
@@ -267,5 +257,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

@@ -1,7 +1,7 @@
 import networkx as nx
 import random
 import matplotlib.pyplot as plt
-from sampling_algorithms import Uniform, MetropolisHastings
+from .sampling_algorithms import Uniform, MetropolisHastings
 import torch
 from torch.utils.data import DataLoader, Subset
 
