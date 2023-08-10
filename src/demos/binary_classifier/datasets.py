@@ -26,11 +26,11 @@ class CovType(Dataset):
         X = sc.fit_transform(X)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=2)
         if self.train:
-            self.features = torch.tensor(X_train)
-            self.targets = torch.tensor(y_train)
+            self.features = torch.tensor(X_train, dtype=torch.float32)
+            self.targets = torch.tensor(y_train, dtype=torch.float32).reshape(-1, 1)
         else:
-            self.features = torch.tensor(X_test)
-            self.features = torch.tensor(y_test)
+            self.features = torch.tensor(X_test, dtype=torch.float32)
+            self.targets = torch.tensor(y_test, dtype=torch.float32).reshape(-1, 1)
 
 
 def test():

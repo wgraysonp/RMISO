@@ -41,6 +41,7 @@ def get_parser():
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
     parser.add_argument('--load_graph', action='store_true', help='load previously used graph')
+    parser.add_argument('--save', action='store_true', help='save training curve')
     return parser
 
 
@@ -106,7 +107,7 @@ def build_model(args, device, ckpt=None):
     }[args.model]()
     net = net.to(device)
     if device == 'cuda':
-        net = torch.nn.DataParallel(net)
+       # net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
     if ckpt:
@@ -145,7 +146,7 @@ def create_optimizer(args, num_nodes, model_params):
 
 
 def train(net, epoch, device, graph, optimizer, criterion):
-    print('\nEpoch: % epoch')
+    print('\nEpoch: %d' %  epoch)
     net.train()
     train_loss = 0
     correct = 0
@@ -165,7 +166,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
         if isinstance(optimizer, RMISO):
             optimizer.set_current_node(node_id)
         optimizer.step()
-        train_loss += loss.item()
+        train_loss += loss.item()/n_iter
         predicted = (outputs > 0.5).float()
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
@@ -174,7 +175,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
     print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
 
-    return accuracy
+    return accuracy, train_loss
 
 
 def test(net, device, data_loader, criterion):
@@ -182,13 +183,14 @@ def test(net, device, data_loader, criterion):
     test_loss = 0
     correct = 0
     total = 0
+    n_iter = len(data_loader)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(data_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
 
-            test_loss += loss.item()
+            test_loss += loss.item()/n_iter
             predicted = (outputs > 0.5).float()
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
@@ -196,7 +198,7 @@ def test(net, device, data_loader, criterion):
     accuracy = 100. * correct / total
     print('test acc %.3f' % accuracy)
 
-    return accuracy
+    return accuracy, test_loss
 
 
 def main():
@@ -226,33 +228,41 @@ def main():
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.MSELoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1, last_epoch=start_epoch)
 
     train_accuracies = []
     test_accuracies = []
+    train_losses = []
+    test_losses = []
 
     for epoch in range(start_epoch + 1, 200):
-        train_acc = train(net, epoch, device, graph_loader, optimizer, criterion)
-        test_acc = test(net, device, test_loader, criterion)
+        train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
+        test_acc, test_loss = test(net, device, test_loader, criterion)
+       # scheduler.step()
 
-        # Save checkpoint
-        if test_acc > best_acc:
-            print('Saving...')
-            state = {
-                'net': net.state_dict(),
-                'acc': test_acc,
-                'epoch': epoch,
-            }
-            if not os.path.isdir('checkpoint'):
-                os.mkdir('checkpoint')
-            torch.save(state, os.path.join('checkpoint', ckpt_name))
-            best_acc = test_acc
+        if args.save:
+         # Save checkpoint
+            if test_acc > best_acc:
+                print('Saving...')
+                state = {
+                    'net': net.state_dict(),
+                    'acc': test_acc,
+                    'loss': test_loss,
+                    'epoch': epoch,
+                 }
+                if not os.path.isdir('checkpoint'):
+                    os.mkdir('checkpoint')
+                torch.save(state, os.path.join('checkpoint', ckpt_name))
+                best_acc = test_acc
 
-        train_accuracies.append(train_acc)
-        test_accuracies.append(test_acc)
-        if not os.path.isdir('curve'):
-            os.mkdir('curve')
-        torch.save({'train_acc': train_accuracies, 'test_acc': test_accuracies},
-                   os.path.join('curve', ckpt_name))
+            train_accuracies.append(train_acc)
+            train_losses.append(train_loss)
+            test_losses.append(test_loss)
+            test_accuracies.append(test_acc)
+            if not os.path.isdir('curve'):
+                os.mkdir('curve')
+            torch.save({'train_acc': train_accuracies, 'train_loss': train_loss, 'test_acc': test_accuracies, 'test_loss': test_losses},
+                        os.path.join('curve', ckpt_name))
 
 
 if __name__ == "__main__":
