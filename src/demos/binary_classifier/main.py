@@ -85,8 +85,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'rho{}-lr{}-'.format(rho, lr),
-        'mcsag': 'rho{}-lr{}-'.format(rho, lr),
+        'rmiso': 'lr-{}-rho{}'.format(lr, rho),
+        'mcsag': 'lr{}-rho{}'.format(lr, rho),
     }[optimizer]
 
     return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
@@ -262,7 +262,7 @@ def main():
             test_accuracies.append(test_acc)
             if not os.path.isdir('curve'):
                 os.mkdir('curve')
-            torch.save({'train_acc': train_accuracies, 'train_loss': train_loss, 'test_acc': test_accuracies, 'test_loss': test_losses},
+            torch.save({'train_acc': train_accuracies, 'train_loss': train_losses, 'test_acc': test_accuracies, 'test_loss': test_losses},
                         os.path.join('curve', ckpt_name))
 
 
