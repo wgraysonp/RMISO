@@ -33,8 +33,9 @@ def get_parser():
                         help='convergence speed term of Adabound')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
+    parser.add_argument('--tau', default=1, type=float, help='mcsag hitting time. set to 1 for o.g. sag')
     parser.add_argument('--dynamic_step', action='store_true',
-                        help='rmiso dynamic proximal regularization schedule')
+                        help='rmiso and mcsag dynamic lr schedule')
     parser.add_argument('--beta1', default=0.9, type=float, help='Adam coefficients beta_1')
     parser.add_argument('--beta2', default=0.999, type=float, help='Adam coefficients beta_2')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -133,7 +134,7 @@ def create_optimizer(args, num_nodes, model_params):
                      dynamic_step=args.dynamic_step, rho=args.rho)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, rho=args.rho)
+                     dynamic_step=args.dynamic_step, tau=args.tau, rho=args.rho)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma=args.gamma,
@@ -235,7 +236,7 @@ def main():
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch + 1, 200):
+    for epoch in range(start_epoch + 1, 50):
         train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
        # scheduler.step()
