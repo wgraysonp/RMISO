@@ -43,6 +43,7 @@ def get_parser():
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
     parser.add_argument('--load_graph', action='store_true', help='load previously used graph')
+    parser.add_argument('--init_optimizer', action='store_true', help='initialize gradients for SAG or RMISO')
     parser.add_argument('--save', action='store_true', help='save training curve')
     return parser
 
@@ -149,8 +150,25 @@ def create_optimizer(args, num_nodes, model_params):
                         weight_decay=args.weight_decay, amsbound=True)
 
 
+def initialize_optimizer(net, device, graph, optimizer, criterion):
+    assert isinstance(optimizer, (RMISO, MCSAG))
+    print("==> initializing gradients")
+    n_iter = len(graph.nodes)
+    for i in range(n_iter):
+        loader = graph.nodes[i]['loader']
+        assert len(loader) == 1
+        (inputs, targets) = next(iter(loader))
+        inputs, targets = inputs.to(device), targets.to(device)
+        optimizer.zero_grad()
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.set_current_node(i)
+        optimizer.init_params()
+
+
 def train(net, epoch, device, graph, optimizer, criterion):
-    print('\nEpoch: %d' %  epoch)
+    print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
@@ -233,6 +251,9 @@ def main():
     criterion = nn.MSELoss() if args.model == "one_layer" else nn.SoftMarginLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1, last_epoch=start_epoch)
+
+    if args.init_opitimizer:
+        initialize_optimizer(net, device, graph_loader, optimizer, criterion)
 
     train_accuracies = []
     test_accuracies = []
