@@ -51,8 +51,10 @@ def build_dataset(args):
 
     directory = os.path.join(os.getcwd(), "saved_graphs")
     os.makedirs(directory, exist_ok=True)
-    f_name = "data_graph.pickle"
+    f_name = "data_graph-{}-{}.pickle".format(args.sampling_algorithm, args.model)
     path = os.path.join(directory, f_name)
+
+    zero_one = True if args.model == "one_layer" else False
 
     if args.load_graph:
         try:
@@ -63,14 +65,14 @@ def build_dataset(args):
             print("No graph available to load")
             sys.exit(1)
     else:
-        train_set = CovType(train=True)
+        train_set = CovType(train=True, zero_one=zero_one)
         graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
                           algorithm=args.sampling_algorithm)
         if os.path.exists(path):
             os.remove(path)
-        pickle.dump(graph, open(path, 'wb'))
+        pickle.dump(graph, open(path, 'wb'))    
 
-    test_set = CovType(train=False)
+    test_set = CovType(train=False, zero_one=zero_one)
     test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
 
     return graph, test_loader
@@ -168,7 +170,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()/n_iter
-        predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float()
+        predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
@@ -192,7 +194,7 @@ def test(net, device, data_loader, criterion):
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()/n_iter
-            predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float()
+            predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
