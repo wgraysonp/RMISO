@@ -12,7 +12,7 @@ class TwoLayer(nn.Module):
     def forward(self, x):
         out = F.softplus(self.layer1(x), beta=1)
         out = self.layer2(out)
-        out = F.sigmoid(out)
+        out = F.softsign(out)
         return out
 
 

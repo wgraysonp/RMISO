@@ -8,8 +8,10 @@ import numpy as np
 
 class CovType(Dataset):
 
-    def __init__(self, train=True):
+    def __init__(self, train=True, zero_one=True):
         self.train = train
+        # label samples as either 0 or 1 if true and -1 or 1 if false
+        self.zero_one = zero_one
         self._load_and_preprocess_data()
         self.length = self.features.shape[0]
 
@@ -21,7 +23,10 @@ class CovType(Dataset):
 
     def _load_and_preprocess_data(self):
         X, y = fetch_covtype(data_home="data", random_state=0, shuffle=True, return_X_y=True)
-        y = np.array(list(map(lambda x: 1 if x == 2 else 0, y)))
+        if self.zero_one:
+            y = np.array(list(map(lambda x: 1 if x == 2 else 0, y)))
+        else:
+            y = np.array(list(map(lambda x: 1 if x == 2 else -1, y)))
         sc = StandardScaler()
         X = sc.fit_transform(X)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=2)

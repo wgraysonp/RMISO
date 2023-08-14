@@ -85,7 +85,7 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr-{}-rho{}'.format(lr, rho),
+        'rmiso': 'lr{}-rho{}'.format(lr, rho),
         'mcsag': 'lr{}-rho{}'.format(lr, rho),
     }[optimizer]
 
@@ -168,7 +168,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()/n_iter
-        predicted = (outputs > 0.5).float()
+        predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float()
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
@@ -192,7 +192,7 @@ def test(net, device, data_loader, criterion):
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()/n_iter
-            predicted = (outputs > 0.5).float()
+            predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float()
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
@@ -227,7 +227,7 @@ def main():
         start_epoch = -1
 
     net = build_model(args, device, ckpt=ckpt)
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss() if args.model == "one_layer" else nn.SoftMarginLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1, last_epoch=start_epoch)
 
