@@ -23,7 +23,7 @@ def save_graphs_as_print(f_name):
     else:
         raise ValueError("invalid algorithm")
 
-    save_name = "alg:{}-nodes:{}-edges:{}.pdf".format(alg, graph.num_nodes, graph.num_edges)
+    save_name = "alg:{}-nodes:{}-edges:{}.jpg".format(alg, graph.num_nodes, graph.num_edges)
 
     save_str = os.path.join(print_graph_path, save_name)
 
