@@ -78,7 +78,7 @@ class DataGraph(nx.Graph):
 
 
 def test():
-    data_set = list(range(100))
+    data_set = list(range(500))
     G = DataGraph(data_set, num_nodes=40, num_edges=70)
     pos = nx.spring_layout(G)
     nx.draw(G, pos)

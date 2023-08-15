@@ -29,7 +29,7 @@ def save_graphs_as_print(f_name):
 
     fig = plt.figure()
     pos = nx.spring_layout(graph)
-    nx.draw(graph, pos, ax=fig.add_subplot())
+    nx.draw(graph, pos, node_size=50, ax=fig.add_subplot())
     fig.savefig(save_str)
 
 
