@@ -11,10 +11,11 @@ os.makedirs(print_graph_path, exist_ok=True)
 
 def save_graphs_as_print():
     for name in os.listdir(graph_path):
-        graph = pickle.load(open(name, 'rb'))
+        f_name = os.path.join(graph_path, name)
+        graph = pickle.load(open(f_name, 'rb'))
         assert isinstance(graph, DataGraph)
         for node in graph.nodes:
-            node['loader'] = None
+           graph.nodes[node]['loader'] = None
         if isinstance(graph.sampling_alg, MetropolisHastings):
             alg = "metropolis_hastings"
         elif isinstance(graph.sampling_alg, Uniform):
