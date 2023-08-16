@@ -42,37 +42,28 @@ def get_parser():
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
-    parser.add_argument('--load_graph', action='store_true', help='load previously used graph')
+    parser.add_argument('--save_graph', action='store_true', help='save the data graph')
     parser.add_argument('--init_optimizer', action='store_true', help='initialize gradients for SAG or RMISO')
     parser.add_argument('--save', action='store_true', help='save training curve')
     return parser
 
 
 def build_dataset(args):
-    print('== Preparing data..')
-
-    directory = os.path.join(os.getcwd(), "saved_graphs")
-    os.makedirs(directory, exist_ok=True)
-    f_name = "data_graph-{}-{}.pickle".format(args.sampling_algorithm, args.model)
-    path = os.path.join(directory, f_name)
+    print('==> Preparing data..')
 
     zero_one = True if args.model == "one_layer" else False
 
-    if args.load_graph:
-        try:
-            graph = pickle.load(open(path, 'rb'))
-            assert isinstance(graph, DataGraph), "Graph loaded is not the correct object."
-            print("Loading Graph-over-riding graph topology arguments")
-        except FileNotFoundError:
-            print("No graph available to load")
-            sys.exit(1)
-    else:
-        train_set = CovType(train=True, zero_one=zero_one)
-        graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
-                          algorithm=args.sampling_algorithm)
-        if os.path.exists(path):
-            os.remove(path)
-        pickle.dump(graph, open(path, 'wb'))    
+    train_set = CovType(train=True, zero_one=zero_one)
+    graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
+                      algorithm=args.sampling_algorithm)
+
+    if args.save_graph:
+        directory = os.path.join(os.getcwd(), "saved_graphs")
+        os.makedirs(directory, exist_ok=True)
+        f_name = "data_graph-{}-{}-nodes{}-edges{}.pickle".format(args.sampling_algorithm, args.model,
+                                                                  args.graph_size, args.graph_edges)
+        path = os.path.join(directory, f_name)
+        pickle.dump(graph, open(path, 'wb'))
 
     test_set = CovType(train=False, zero_one=zero_one)
     test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)

@@ -1,7 +1,10 @@
 import networkx as nx
 import random
 import matplotlib.pyplot as plt
-from .sampling_algorithms import Uniform, MetropolisHastings
+if __name__ == "__main__":
+    from sampling_algorithms import Uniform, MetropolisHastings
+else:
+    from .sampling_algorithms import Uniform, MetropolisHastings
 import torch
 from torch.utils.data import DataLoader, Subset
 
@@ -47,6 +50,9 @@ class DataGraph(nx.Graph):
             self.add_node(i, data=idxs[m * i:], loader=loader)
 
     def _connect_graph(self):
+        # set random seed for reproducible graphs
+        random.seed(a=4)
+
         S, T = list(self.nodes), []
 
         node_s = random.sample(S, 1).pop()
@@ -79,14 +85,15 @@ class DataGraph(nx.Graph):
 
 def test():
     data_set = list(range(500))
-    G = DataGraph(data_set, num_nodes=40, num_edges=70)
+    G = DataGraph(data_set, num_nodes=7, num_edges=9)
     pos = nx.spring_layout(G)
     nx.draw(G, pos)
     plt.show()
     node = 1
-    print(len(G.nodes[node]['loader']))
+    #print(len(G.nodes[node]['loader']))
     print(len(G.edges))
-    #print([n for n in G.neighbors(node)])
+    for node in G.nodes:
+        print([n for n in G.neighbors(node)])
 
 
 if __name__=="__main__":
