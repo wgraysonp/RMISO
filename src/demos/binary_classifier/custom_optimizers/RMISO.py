@@ -96,12 +96,24 @@ class RMISO(Optimizer):
                 self.param_dict[p][self.curr_node] = param.detach().clone()
                 state['avg_param'] = avg_param
 
+                # New implementation
                 L = 1/group['lr']
                 step_size = 1/(L + group['delta']*group['rho'])
+                alpha = group['delta']*group['rho']*step_size
 
-                p.data.mul_(group['delta']*group['rho']*step_size)
-                p.data.add_(avg_param, alpha=L*step_size)
-                p.data.add_(-avg_grad, alpha=step_size)
+                avg_param_reg = avg_param.clone()
+
+                avg_param_reg.mul_(1-alpha)
+                avg_param_reg.add_(param, alpha=alpha)
+
+                p.data = avg_param_reg.add(-avg_grad, alpha=step_size)
+
+                #L = 1/group['lr']
+                #step_size = 1/(L + group['delta']*group['rho'])
+
+                #p.data.mul_(group['delta']*group['rho']*step_size)
+                #p.data.add_(avg_param, alpha=L*step_size)
+                #p.data.add_(-avg_grad, alpha=step_size)
 
         return loss
 
