@@ -1,0 +1,2640 @@
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693634
+train acc 51.635
+test acc 56.379
+
+Epoch: 1
+loss: 0.659574
+train acc 62.156
+test acc 64.989
+
+Epoch: 2
+loss: 0.631701
+train acc 68.374
+test acc 69.499
+
+Epoch: 3
+loss: 0.614515
+train acc 70.377
+test acc 71.639
+
+Epoch: 4
+loss: 0.599543
+train acc 71.580
+test acc 73.260
+lr: 1000
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.677675
+train acc 57.275
+test acc 64.902
+
+Epoch: 1
+loss: 0.643398
+train acc 67.634
+test acc 68.950
+
+Epoch: 2
+loss: 0.634579
+train acc 65.218
+test acc 69.344
+
+Epoch: 3
+loss: 0.611279
+train acc 69.452
+test acc 69.698
+
+Epoch: 4
+loss: 0.604160
+train acc 69.994
+test acc 70.743
+lr: 1000
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.749936
+train acc 51.015
+test acc 51.468
+
+Epoch: 1
+loss: 0.780335
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.684435
+train acc 57.922
+test acc 63.597
+
+Epoch: 3
+loss: 0.682380
+train acc 61.075
+test acc 65.961
+
+Epoch: 4
+loss: 0.605618
+train acc 69.399
+test acc 70.569
+lr: 1000
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.788398
+train acc 50.920
+test acc 51.468
+
+Epoch: 1
+loss: 0.794956
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.792752
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.787098
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.738687
+train acc 53.868
+test acc 53.816
+lr: 1000
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.806664
+train acc 48.988
+test acc 48.532
+
+Epoch: 1
+loss: 0.790515
+train acc 50.693
+test acc 51.468
+
+Epoch: 2
+loss: 0.803126
+train acc 49.836
+test acc 48.532
+
+Epoch: 3
+loss: 0.822103
+train acc 48.918
+test acc 48.532
+
+Epoch: 4
+loss: 0.822691
+train acc 48.807
+test acc 48.532
+lr: 1000
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.809929
+train acc 49.119
+test acc 48.532
+
+Epoch: 1
+loss: 0.818811
+train acc 48.832
+test acc 48.532
+
+Epoch: 2
+loss: 0.813764
+train acc 48.819
+test acc 51.476
+
+Epoch: 3
+loss: 0.806379
+train acc 49.096
+test acc 48.532
+
+Epoch: 4
+loss: 0.813280
+train acc 48.807
+test acc 48.532
+lr: 500
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.688472
+train acc 53.505
+test acc 62.952
+
+Epoch: 1
+loss: 0.652891
+train acc 65.691
+test acc 67.545
+
+Epoch: 2
+loss: 0.630570
+train acc 68.219
+test acc 67.997
+
+Epoch: 3
+loss: 0.616078
+train acc 69.806
+test acc 71.388
+
+Epoch: 4
+loss: 0.601402
+train acc 71.528
+test acc 72.591
+lr: 500
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.752160
+train acc 50.404
+test acc 51.468
+
+Epoch: 1
+loss: 0.786596
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.792664
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.796085
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.795657
+train acc 51.193
+test acc 51.468
+lr: 500
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.772693
+train acc 50.895
+test acc 51.468
+
+Epoch: 1
+loss: 0.797448
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.793386
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.788303
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.649136
+train acc 64.002
+test acc 69.945
+lr: 500
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.797426
+train acc 48.963
+test acc 51.468
+
+Epoch: 1
+loss: 0.801496
+train acc 49.404
+test acc 48.532
+
+Epoch: 2
+loss: 0.751587
+train acc 53.528
+test acc 69.449
+
+Epoch: 3
+loss: 0.619727
+train acc 68.268
+test acc 70.916
+
+Epoch: 4
+loss: 0.595759
+train acc 71.119
+test acc 72.652
+lr: 500
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.789649
+train acc 50.881
+test acc 51.468
+
+Epoch: 1
+loss: 0.791818
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.792159
+train acc 50.214
+test acc 48.532
+
+Epoch: 3
+loss: 0.785497
+train acc 49.966
+test acc 48.532
+
+Epoch: 4
+loss: 0.789791
+train acc 50.943
+test acc 51.468
+lr: 250
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.687025
+train acc 54.263
+test acc 63.156
+
+Epoch: 1
+loss: 0.648237
+train acc 67.188
+test acc 69.769
+
+Epoch: 2
+loss: 0.624886
+train acc 70.220
+test acc 68.985
+
+Epoch: 3
+loss: 0.608629
+train acc 71.307
+test acc 72.361
+
+Epoch: 4
+loss: 0.596937
+train acc 72.911
+test acc 73.663
+lr: 250
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.759802
+train acc 50.600
+test acc 51.468
+
+Epoch: 1
+loss: 0.783721
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.693507
+train acc 57.123
+test acc 68.124
+
+Epoch: 3
+loss: 0.633055
+train acc 65.131
+test acc 69.457
+
+Epoch: 4
+loss: 0.639649
+train acc 65.731
+test acc 69.044
+lr: 250
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.763287
+train acc 50.147
+test acc 51.468
+
+Epoch: 1
+loss: 0.784737
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.775136
+train acc 51.628
+test acc 51.468
+
+Epoch: 3
+loss: 0.798556
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.799195
+train acc 51.193
+test acc 51.468
+lr: 250
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.784349
+train acc 50.881
+test acc 51.468
+
+Epoch: 1
+loss: 0.794100
+train acc 49.911
+test acc 48.532
+
+Epoch: 2
+loss: 0.804661
+train acc 49.106
+test acc 48.532
+
+Epoch: 3
+loss: 0.821440
+train acc 48.918
+test acc 48.532
+
+Epoch: 4
+loss: 0.823567
+train acc 48.807
+test acc 48.532
+lr: 250
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.785947
+train acc 49.411
+test acc 48.532
+
+Epoch: 1
+loss: 0.820938
+train acc 48.832
+test acc 48.532
+
+Epoch: 2
+loss: 0.821553
+train acc 48.819
+test acc 48.532
+
+Epoch: 3
+loss: 0.819333
+train acc 48.918
+test acc 48.532
+
+Epoch: 4
+loss: 0.820807
+train acc 48.807
+test acc 48.532
+lr: 100
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694148
+train acc 53.015
+test acc 60.982
+
+Epoch: 1
+loss: 0.654174
+train acc 65.508
+test acc 67.144
+
+Epoch: 2
+loss: 0.632195
+train acc 68.472
+test acc 67.082
+
+Epoch: 3
+loss: 0.617800
+train acc 69.589
+test acc 70.260
+
+Epoch: 4
+loss: 0.605291
+train acc 71.023
+test acc 71.634
+lr: 100
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.738592
+train acc 50.747
+test acc 51.468
+
+Epoch: 1
+loss: 0.794713
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.797641
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.799205
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.798267
+train acc 51.193
+test acc 51.468
+lr: 100
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.778091
+train acc 49.582
+test acc 51.468
+
+Epoch: 1
+loss: 0.755658
+train acc 50.882
+test acc 51.468
+
+Epoch: 2
+loss: 0.781226
+train acc 50.949
+test acc 51.468
+
+Epoch: 3
+loss: 0.798563
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.796701
+train acc 51.193
+test acc 51.468
+lr: 100
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.776201
+train acc 50.204
+test acc 51.468
+
+Epoch: 1
+loss: 0.783022
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.785686
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.790922
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.778769
+train acc 51.193
+test acc 48.532
+lr: 100
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.777401
+train acc 49.593
+test acc 48.532
+
+Epoch: 1
+loss: 0.813323
+train acc 48.832
+test acc 48.532
+
+Epoch: 2
+loss: 0.814020
+train acc 48.819
+test acc 48.532
+
+Epoch: 3
+loss: 0.788791
+train acc 49.389
+test acc 48.532
+
+Epoch: 4
+loss: 0.787942
+train acc 49.447
+test acc 48.532
+lr: 50
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.696927
+train acc 52.407
+test acc 55.136
+
+Epoch: 1
+loss: 0.667176
+train acc 60.219
+test acc 66.281
+
+Epoch: 2
+loss: 0.641134
+train acc 67.681
+test acc 68.813
+
+Epoch: 3
+loss: 0.622219
+train acc 70.011
+test acc 67.642
+
+Epoch: 4
+loss: 0.615181
+train acc 69.002
+test acc 71.201
+lr: 50
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.750049
+train acc 50.527
+test acc 51.468
+
+Epoch: 1
+loss: 0.736944
+train acc 49.978
+test acc 48.532
+
+Epoch: 2
+loss: 0.769729
+train acc 49.105
+test acc 48.532
+
+Epoch: 3
+loss: 0.787284
+train acc 48.918
+test acc 62.907
+
+Epoch: 4
+loss: 0.665745
+train acc 59.228
+test acc 61.934
+lr: 50
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.759413
+train acc 50.812
+test acc 51.468
+
+Epoch: 1
+loss: 0.786142
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.789566
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.794230
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.792153
+train acc 51.193
+test acc 51.468
+lr: 50
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.760365
+train acc 50.421
+test acc 51.468
+
+Epoch: 1
+loss: 0.783753
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.783410
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.751836
+train acc 50.515
+test acc 51.468
+
+Epoch: 4
+loss: 0.778251
+train acc 49.553
+test acc 51.468
+lr: 50
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.771492
+train acc 50.124
+test acc 51.468
+
+Epoch: 1
+loss: 0.779384
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.782937
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.789049
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.780405
+train acc 51.193
+test acc 51.468
+lr: 10
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.685794
+train acc 56.463
+test acc 64.675
+
+Epoch: 1
+loss: 0.669275
+train acc 65.049
+test acc 67.890
+
+Epoch: 2
+loss: 0.659129
+train acc 67.607
+test acc 68.324
+
+Epoch: 3
+loss: 0.646642
+train acc 68.512
+test acc 68.067
+
+Epoch: 4
+loss: 0.631722
+train acc 69.054
+test acc 69.193
+lr: 10
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.707202
+train acc 50.606
+test acc 48.532
+
+Epoch: 1
+loss: 0.731602
+train acc 50.883
+test acc 51.468
+
+Epoch: 2
+loss: 0.710718
+train acc 50.500
+test acc 51.468
+
+Epoch: 3
+loss: 0.703241
+train acc 50.717
+test acc 48.532
+
+Epoch: 4
+loss: 0.751550
+train acc 52.222
+test acc 51.468
+lr: 10
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.732330
+train acc 49.731
+test acc 51.468
+
+Epoch: 1
+loss: 0.730743
+train acc 49.801
+test acc 48.532
+
+Epoch: 2
+loss: 0.722178
+train acc 50.246
+test acc 48.532
+
+Epoch: 3
+loss: 0.720876
+train acc 50.473
+test acc 54.318
+
+Epoch: 4
+loss: 0.715111
+train acc 50.471
+test acc 51.468
+lr: 10
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.714174
+train acc 50.013
+test acc 48.532
+
+Epoch: 1
+loss: 0.732956
+train acc 50.420
+test acc 48.532
+
+Epoch: 2
+loss: 0.731238
+train acc 50.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.712632
+train acc 50.425
+test acc 48.532
+
+Epoch: 4
+loss: 0.722914
+train acc 50.446
+test acc 48.532
+lr: 10
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.733870
+train acc 49.901
+test acc 48.532
+
+Epoch: 1
+loss: 0.734400
+train acc 50.420
+test acc 48.532
+
+Epoch: 2
+loss: 0.754723
+train acc 50.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.769917
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.736643
+train acc 50.676
+test acc 48.532
+lr: 1
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694805
+train acc 50.809
+test acc 51.468
+
+Epoch: 1
+loss: 0.692592
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692571
+train acc 51.184
+test acc 51.468
+
+Epoch: 3
+loss: 0.692446
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692156
+train acc 51.193
+test acc 51.468
+lr: 1
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694095
+train acc 50.586
+test acc 51.468
+
+Epoch: 1
+loss: 0.692946
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692886
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692863
+train acc 51.082
+test acc 48.532
+
+Epoch: 4
+loss: 0.693012
+train acc 50.974
+test acc 51.468
+lr: 1
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694793
+train acc 50.652
+test acc 51.468
+
+Epoch: 1
+loss: 0.692878
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692866
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692897
+train acc 51.082
+test acc 48.532
+
+Epoch: 4
+loss: 0.692941
+train acc 50.974
+test acc 51.468
+lr: 1
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693684
+train acc 50.843
+test acc 51.468
+
+Epoch: 1
+loss: 0.692946
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692896
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692898
+train acc 51.082
+test acc 48.532
+
+Epoch: 4
+loss: 0.693056
+train acc 50.974
+test acc 51.468
+lr: 1
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693757
+train acc 50.368
+test acc 51.468
+
+Epoch: 1
+loss: 0.693083
+train acc 50.727
+test acc 51.468
+
+Epoch: 2
+loss: 0.692960
+train acc 50.962
+test acc 51.468
+
+Epoch: 3
+loss: 0.692935
+train acc 50.942
+test acc 51.468
+
+Epoch: 4
+loss: 0.692986
+train acc 50.907
+test acc 51.468
+lr: 0.1
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.692851
+train acc 50.832
+test acc 51.468
+
+Epoch: 1
+loss: 0.692892
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692878
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692903
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692851
+train acc 51.193
+test acc 51.468
+lr: 0.1
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693490
+train acc 50.789
+test acc 51.468
+
+Epoch: 1
+loss: 0.692898
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692883
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692909
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692857
+train acc 51.193
+test acc 51.468
+lr: 0.1
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.695633
+train acc 51.022
+test acc 51.468
+
+Epoch: 1
+loss: 0.692901
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692885
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692911
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692859
+train acc 51.193
+test acc 51.468
+lr: 0.1
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.695768
+train acc 50.284
+test acc 51.468
+
+Epoch: 1
+loss: 0.692908
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692890
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692916
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692864
+train acc 51.193
+test acc 51.468
+lr: 0.1
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694763
+train acc 50.284
+test acc 51.468
+
+Epoch: 1
+loss: 0.692899
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.692884
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692911
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692859
+train acc 51.193
+test acc 51.468
+lr: 0.01
+rho: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694501
+train acc 48.990
+test acc 48.532
+
+Epoch: 1
+loss: 0.693176
+train acc 48.832
+test acc 48.532
+
+Epoch: 2
+loss: 0.693133
+train acc 50.178
+test acc 51.468
+
+Epoch: 3
+loss: 0.693083
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.693024
+train acc 51.193
+test acc 51.468
+lr: 0.01
+rho: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693490
+train acc 51.002
+test acc 51.468
+
+Epoch: 1
+loss: 0.692999
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.693001
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.692996
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692946
+train acc 51.193
+test acc 51.468
+lr: 0.01
+rho: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.695557
+train acc 48.993
+test acc 48.532
+
+Epoch: 1
+loss: 0.693230
+train acc 48.832
+test acc 48.532
+
+Epoch: 2
+loss: 0.693170
+train acc 49.993
+test acc 51.468
+
+Epoch: 3
+loss: 0.693107
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.693044
+train acc 51.193
+test acc 51.468
+lr: 0.01
+rho: 0.001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694197
+train acc 50.977
+test acc 51.468
+
+Epoch: 1
+loss: 0.693015
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.693013
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.693006
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692956
+train acc 51.193
+test acc 51.468
+lr: 0.01
+rho: 0.0001
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693540
+train acc 50.143
+test acc 51.468
+
+Epoch: 1
+loss: 0.693105
+train acc 51.168
+test acc 51.468
+
+Epoch: 2
+loss: 0.693081
+train acc 51.181
+test acc 51.468
+
+Epoch: 3
+loss: 0.693049
+train acc 51.082
+test acc 51.468
+
+Epoch: 4
+loss: 0.692994
+train acc 51.193
+test acc 51.468
+nodes 40
+edges 80
+algorithm: mcmc
+lr: 1000
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.703746
+train acc 51.240
+test acc 51.496
+
+Epoch: 1
+loss: 0.703472
+train acc 51.224
+test acc 51.490
+
+Epoch: 2
+loss: 0.703203
+train acc 51.346
+test acc 51.485
+
+Epoch: 3
+loss: 0.703578
+train acc 51.199
+test acc 51.474
+
+Epoch: 4
+loss: 0.703581
+train acc 51.143
+test acc 51.460
+lr: 1000
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694445
+train acc 52.636
+test acc 52.718
+
+Epoch: 1
+loss: 0.693037
+train acc 53.183
+test acc 53.375
+
+Epoch: 2
+loss: 0.692015
+train acc 53.643
+test acc 53.705
+
+Epoch: 3
+loss: 0.690852
+train acc 53.867
+test acc 54.146
+
+Epoch: 4
+loss: 0.689762
+train acc 54.557
+test acc 54.269
+lr: 1000
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.696189
+train acc 50.260
+test acc 51.797
+
+Epoch: 1
+loss: 0.690522
+train acc 53.793
+test acc 54.919
+
+Epoch: 2
+loss: 0.688512
+train acc 55.598
+test acc 56.654
+
+Epoch: 3
+loss: 0.686174
+train acc 57.269
+test acc 57.879
+
+Epoch: 4
+loss: 0.684364
+train acc 57.829
+test acc 58.628
+lr: 1000
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.685505
+train acc 59.085
+test acc 65.129
+
+Epoch: 1
+loss: 0.666858
+train acc 67.105
+test acc 67.962
+
+Epoch: 2
+loss: 0.653124
+train acc 68.789
+test acc 69.801
+
+Epoch: 3
+loss: 0.642177
+train acc 70.265
+test acc 70.427
+
+Epoch: 4
+loss: 0.634385
+train acc 70.888
+test acc 70.798
+lr: 1000
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.669767
+train acc 60.647
+test acc 69.414
+
+Epoch: 1
+loss: 0.611726
+train acc 70.751
+test acc 72.540
+
+Epoch: 2
+loss: 0.589250
+train acc 72.445
+test acc 73.219
+
+Epoch: 3
+loss: 0.576333
+train acc 74.192
+test acc 75.422
+
+Epoch: 4
+loss: 0.568263
+train acc 75.383
+test acc 73.869
+lr: 500
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.709069
+train acc 51.214
+test acc 51.468
+
+Epoch: 1
+loss: 0.709172
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.708576
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.709098
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.709082
+train acc 51.158
+test acc 51.468
+lr: 500
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.730317
+train acc 48.786
+test acc 48.532
+
+Epoch: 1
+loss: 0.728668
+train acc 48.827
+test acc 48.532
+
+Epoch: 2
+loss: 0.727749
+train acc 48.697
+test acc 48.532
+
+Epoch: 3
+loss: 0.725544
+train acc 48.834
+test acc 48.532
+
+Epoch: 4
+loss: 0.724224
+train acc 48.842
+test acc 48.533
+lr: 500
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694627
+train acc 52.585
+test acc 52.693
+
+Epoch: 1
+loss: 0.692132
+train acc 53.134
+test acc 53.635
+
+Epoch: 2
+loss: 0.689057
+train acc 54.440
+test acc 55.257
+
+Epoch: 3
+loss: 0.686710
+train acc 56.136
+test acc 56.457
+
+Epoch: 4
+loss: 0.684912
+train acc 56.929
+test acc 57.327
+lr: 500
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.686869
+train acc 56.456
+test acc 61.349
+
+Epoch: 1
+loss: 0.670874
+train acc 63.359
+test acc 65.139
+
+Epoch: 2
+loss: 0.658915
+train acc 66.426
+test acc 67.653
+
+Epoch: 3
+loss: 0.648803
+train acc 68.517
+test acc 68.591
+
+Epoch: 4
+loss: 0.641671
+train acc 68.931
+test acc 68.721
+lr: 500
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.688980
+train acc 59.929
+test acc 69.894
+
+Epoch: 1
+loss: 0.625412
+train acc 70.216
+test acc 71.473
+
+Epoch: 2
+loss: 0.596443
+train acc 71.785
+test acc 71.993
+
+Epoch: 3
+loss: 0.583163
+train acc 72.722
+test acc 74.390
+
+Epoch: 4
+loss: 0.576893
+train acc 73.628
+test acc 71.589
+lr: 250
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.685020
+train acc 59.052
+test acc 58.930
+
+Epoch: 1
+loss: 0.685143
+train acc 59.149
+test acc 59.005
+
+Epoch: 2
+loss: 0.684965
+train acc 59.093
+test acc 59.086
+
+Epoch: 3
+loss: 0.684557
+train acc 59.477
+test acc 59.148
+
+Epoch: 4
+loss: 0.684444
+train acc 59.637
+test acc 59.185
+lr: 250
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694514
+train acc 51.610
+test acc 51.443
+
+Epoch: 1
+loss: 0.693228
+train acc 51.616
+test acc 51.392
+
+Epoch: 2
+loss: 0.692190
+train acc 51.495
+test acc 51.346
+
+Epoch: 3
+loss: 0.691313
+train acc 51.602
+test acc 51.552
+
+Epoch: 4
+loss: 0.690500
+train acc 51.575
+test acc 51.825
+lr: 250
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.701758
+train acc 49.061
+test acc 48.153
+
+Epoch: 1
+loss: 0.699286
+train acc 47.270
+test acc 46.798
+
+Epoch: 2
+loss: 0.696429
+train acc 46.604
+test acc 47.038
+
+Epoch: 3
+loss: 0.694339
+train acc 47.859
+test acc 49.346
+
+Epoch: 4
+loss: 0.691928
+train acc 50.235
+test acc 51.397
+lr: 250
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.681539
+train acc 60.749
+test acc 65.974
+
+Epoch: 1
+loss: 0.664370
+train acc 67.133
+test acc 67.778
+
+Epoch: 2
+loss: 0.652614
+train acc 68.162
+test acc 68.799
+
+Epoch: 3
+loss: 0.642929
+train acc 69.250
+test acc 69.419
+
+Epoch: 4
+loss: 0.635943
+train acc 69.854
+test acc 69.783
+lr: 250
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.684356
+train acc 57.347
+test acc 68.845
+
+Epoch: 1
+loss: 0.641183
+train acc 66.641
+test acc 69.810
+
+Epoch: 2
+loss: 0.607074
+train acc 70.119
+test acc 69.992
+
+Epoch: 3
+loss: 0.607499
+train acc 69.051
+test acc 70.708
+
+Epoch: 4
+loss: 0.593432
+train acc 70.278
+test acc 71.073
+lr: 100
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694059
+train acc 51.624
+test acc 51.923
+
+Epoch: 1
+loss: 0.694163
+train acc 51.654
+test acc 51.969
+
+Epoch: 2
+loss: 0.693887
+train acc 51.829
+test acc 52.033
+
+Epoch: 3
+loss: 0.694120
+train acc 51.769
+test acc 52.079
+
+Epoch: 4
+loss: 0.694089
+train acc 51.671
+test acc 52.134
+lr: 100
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.701745
+train acc 50.242
+test acc 50.446
+
+Epoch: 1
+loss: 0.701492
+train acc 50.280
+test acc 50.565
+
+Epoch: 2
+loss: 0.700619
+train acc 50.672
+test acc 50.728
+
+Epoch: 3
+loss: 0.700434
+train acc 50.467
+test acc 50.681
+
+Epoch: 4
+loss: 0.700008
+train acc 50.437
+test acc 50.567
+lr: 100
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.690371
+train acc 51.299
+test acc 51.250
+
+Epoch: 1
+loss: 0.687867
+train acc 50.986
+test acc 51.433
+
+Epoch: 2
+loss: 0.685630
+train acc 53.591
+test acc 56.347
+
+Epoch: 3
+loss: 0.683130
+train acc 57.570
+test acc 58.872
+
+Epoch: 4
+loss: 0.681143
+train acc 59.863
+test acc 60.784
+lr: 100
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.687175
+train acc 57.638
+test acc 63.752
+
+Epoch: 1
+loss: 0.677633
+train acc 64.858
+test acc 65.687
+
+Epoch: 2
+loss: 0.669214
+train acc 66.130
+test acc 66.958
+
+Epoch: 3
+loss: 0.660966
+train acc 67.634
+test acc 68.066
+
+Epoch: 4
+loss: 0.654461
+train acc 68.278
+test acc 68.646
+lr: 100
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694864
+train acc 51.303
+test acc 66.726
+
+Epoch: 1
+loss: 0.687687
+train acc 59.358
+test acc 68.390
+
+Epoch: 2
+loss: 0.660723
+train acc 68.478
+test acc 69.327
+
+Epoch: 3
+loss: 0.626589
+train acc 69.653
+test acc 69.633
+
+Epoch: 4
+loss: 0.606248
+train acc 70.956
+test acc 71.636
+lr: 50
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.710539
+train acc 51.068
+test acc 51.339
+
+Epoch: 1
+loss: 0.710591
+train acc 51.026
+test acc 51.339
+
+Epoch: 2
+loss: 0.709997
+train acc 51.159
+test acc 51.339
+
+Epoch: 3
+loss: 0.710500
+train acc 51.021
+test acc 51.339
+
+Epoch: 4
+loss: 0.710305
+train acc 51.010
+test acc 51.339
+lr: 50
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694230
+train acc 51.543
+test acc 51.633
+
+Epoch: 1
+loss: 0.693548
+train acc 52.134
+test acc 52.421
+
+Epoch: 2
+loss: 0.692694
+train acc 52.715
+test acc 53.096
+
+Epoch: 3
+loss: 0.692103
+train acc 53.246
+test acc 53.504
+
+Epoch: 4
+loss: 0.691103
+train acc 53.911
+test acc 53.743
+lr: 50
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.688299
+train acc 53.928
+test acc 55.100
+
+Epoch: 1
+loss: 0.686049
+train acc 56.585
+test acc 57.915
+
+Epoch: 2
+loss: 0.684171
+train acc 59.346
+test acc 60.114
+
+Epoch: 3
+loss: 0.681841
+train acc 60.860
+test acc 61.263
+
+Epoch: 4
+loss: 0.680326
+train acc 61.671
+test acc 62.176
+lr: 50
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.690021
+train acc 55.201
+test acc 62.944
+
+Epoch: 1
+loss: 0.683081
+train acc 63.905
+test acc 64.428
+
+Epoch: 2
+loss: 0.677166
+train acc 64.829
+test acc 65.678
+
+Epoch: 3
+loss: 0.670952
+train acc 66.752
+test acc 66.821
+
+Epoch: 4
+loss: 0.665337
+train acc 67.275
+test acc 67.803
+lr: 50
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.695861
+train acc 50.859
+test acc 51.468
+
+Epoch: 1
+loss: 0.693148
+train acc 50.777
+test acc 51.468
+
+Epoch: 2
+loss: 0.692696
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692478
+train acc 50.821
+test acc 51.468
+
+Epoch: 4
+loss: 0.689896
+train acc 58.619
+test acc 61.681
+lr: 10
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.714739
+train acc 44.604
+test acc 44.741
+
+Epoch: 1
+loss: 0.715209
+train acc 44.404
+test acc 44.752
+
+Epoch: 2
+loss: 0.715002
+train acc 44.718
+test acc 44.761
+
+Epoch: 3
+loss: 0.715349
+train acc 44.369
+test acc 44.778
+
+Epoch: 4
+loss: 0.714806
+train acc 44.762
+test acc 44.789
+lr: 10
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.687021
+train acc 54.460
+test acc 54.828
+
+Epoch: 1
+loss: 0.686552
+train acc 55.088
+test acc 55.140
+
+Epoch: 2
+loss: 0.686903
+train acc 55.221
+test acc 55.387
+
+Epoch: 3
+loss: 0.686357
+train acc 55.259
+test acc 55.552
+
+Epoch: 4
+loss: 0.686404
+train acc 55.558
+test acc 55.675
+lr: 10
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.705079
+train acc 48.635
+test acc 50.144
+
+Epoch: 1
+loss: 0.693053
+train acc 51.067
+test acc 50.556
+
+Epoch: 2
+loss: 0.691686
+train acc 50.396
+test acc 50.544
+
+Epoch: 3
+loss: 0.690361
+train acc 51.049
+test acc 53.728
+
+Epoch: 4
+loss: 0.689122
+train acc 57.243
+test acc 60.343
+lr: 10
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.692997
+train acc 51.166
+test acc 51.468
+
+Epoch: 1
+loss: 0.692845
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692758
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692834
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692792
+train acc 51.158
+test acc 51.468
+lr: 10
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693190
+train acc 51.062
+test acc 51.468
+
+Epoch: 1
+loss: 0.692916
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692809
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692889
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692871
+train acc 51.158
+test acc 51.468
+lr: 1
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.702031
+train acc 51.134
+test acc 51.423
+
+Epoch: 1
+loss: 0.701724
+train acc 51.113
+test acc 51.416
+
+Epoch: 2
+loss: 0.701096
+train acc 51.238
+test acc 51.397
+
+Epoch: 3
+loss: 0.701359
+train acc 51.087
+test acc 51.387
+
+Epoch: 4
+loss: 0.701449
+train acc 51.037
+test acc 51.375
+lr: 1
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694175
+train acc 51.260
+test acc 51.007
+
+Epoch: 1
+loss: 0.692920
+train acc 52.007
+test acc 52.185
+
+Epoch: 2
+loss: 0.692267
+train acc 52.751
+test acc 52.937
+
+Epoch: 3
+loss: 0.691655
+train acc 53.464
+test acc 53.442
+
+Epoch: 4
+loss: 0.691316
+train acc 53.565
+test acc 53.317
+lr: 1
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693118
+train acc 51.207
+test acc 51.468
+
+Epoch: 1
+loss: 0.692878
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692813
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692871
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692875
+train acc 51.158
+test acc 51.468
+lr: 1
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693216
+train acc 51.161
+test acc 51.468
+
+Epoch: 1
+loss: 0.692877
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692810
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692877
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692880
+train acc 51.158
+test acc 51.468
+lr: 1
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693153
+train acc 51.190
+test acc 51.468
+
+Epoch: 1
+loss: 0.692878
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692806
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692876
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692877
+train acc 51.158
+test acc 51.468
+lr: 0.1
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.704108
+train acc 48.751
+test acc 48.514
+
+Epoch: 1
+loss: 0.702256
+train acc 48.809
+test acc 48.514
+
+Epoch: 2
+loss: 0.701862
+train acc 48.682
+test acc 48.514
+
+Epoch: 3
+loss: 0.701386
+train acc 48.804
+test acc 48.514
+
+Epoch: 4
+loss: 0.701071
+train acc 48.830
+test acc 48.514
+lr: 0.1
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693404
+train acc 51.139
+test acc 51.468
+
+Epoch: 1
+loss: 0.693032
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692975
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692967
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692945
+train acc 51.158
+test acc 51.468
+lr: 0.1
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693439
+train acc 51.214
+test acc 51.468
+
+Epoch: 1
+loss: 0.693006
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692898
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692906
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692896
+train acc 51.158
+test acc 51.468
+lr: 0.1
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693117
+train acc 51.193
+test acc 51.468
+
+Epoch: 1
+loss: 0.692999
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692883
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692901
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692894
+train acc 51.158
+test acc 51.468
+lr: 0.1
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693387
+train acc 51.195
+test acc 51.468
+
+Epoch: 1
+loss: 0.692998
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.692882
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.692901
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.692894
+train acc 51.158
+test acc 51.468
+lr: 0.01
+delta: 100
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.694178
+train acc 48.786
+test acc 48.532
+
+Epoch: 1
+loss: 0.693238
+train acc 48.827
+test acc 48.532
+
+Epoch: 2
+loss: 0.693208
+train acc 48.697
+test acc 48.532
+
+Epoch: 3
+loss: 0.693187
+train acc 48.834
+test acc 48.532
+
+Epoch: 4
+loss: 0.693176
+train acc 48.842
+test acc 48.532
+lr: 0.01
+delta: 10
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693249
+train acc 51.101
+test acc 51.468
+
+Epoch: 1
+loss: 0.693127
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.693101
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.693090
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.693076
+train acc 51.158
+test acc 51.468
+lr: 0.01
+delta: 1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693359
+train acc 51.070
+test acc 51.468
+
+Epoch: 1
+loss: 0.693125
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.693094
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.693083
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.693068
+train acc 51.158
+test acc 51.468
+lr: 0.01
+delta: 0.1
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.692937
+train acc 51.302
+test acc 51.468
+
+Epoch: 1
+loss: 0.693124
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.693093
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.693083
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.693067
+train acc 51.158
+test acc 51.468
+lr: 0.01
+delta: 0.01
+==> Preparing data..
+==> Building model..
+
+Epoch: 0
+loss: 0.693263
+train acc 51.212
+test acc 51.468
+
+Epoch: 1
+loss: 0.693124
+train acc 51.173
+test acc 51.468
+
+Epoch: 2
+loss: 0.693093
+train acc 51.303
+test acc 51.468
+
+Epoch: 3
+loss: 0.693083
+train acc 51.166
+test acc 51.468
+
+Epoch: 4
+loss: 0.693067
+train acc 51.158
+test acc 51.468
