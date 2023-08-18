@@ -1,4 +1,5 @@
 import networkx as nx
+from networkx.utils import pairwise
 import random
 import matplotlib.pyplot as plt
 if __name__ == "__main__":
@@ -11,7 +12,7 @@ from torch.utils.data import DataLoader, Subset
 
 class DataGraph(nx.Graph):
 
-    def __init__(self, data_set, num_nodes=10, num_edges=9, algorithm='uniform'):
+    def __init__(self, data_set, num_nodes=10, num_edges=9, topo='random', algorithm='uniform'):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
         if num_edges < num_nodes - 1:
@@ -26,6 +27,7 @@ class DataGraph(nx.Graph):
         self.data_set = data_set
         self.num_nodes = num_nodes
         self.num_edges = num_edges
+        self.topo = topo
 
         self._create_nodes()
         self._connect_graph()
@@ -50,6 +52,21 @@ class DataGraph(nx.Graph):
             self.add_node(i, data=idxs[m * i:], loader=loader)
 
     def _connect_graph(self):
+
+        if self.topo == "random":
+            self._connect_random()
+        elif self.topo == "cycle":
+            self._connect_cycle()
+            self.num_edges = len(self.edges)
+        else:
+            raise ValueError("Graph topology not supported")
+
+        assert nx.is_connected(self), "Graph is not connected"
+
+    def _connect_cycle(self):
+        self.add_edges_from(pairwise(self.nodes, cyclic=True))
+
+    def _connect_random(self):
         # set random seed for reproducible graphs
         random.seed(a=4)
 
@@ -64,8 +81,6 @@ class DataGraph(nx.Graph):
             self.add_edge(node_s, node_t)
             S.remove(node_s)
             T.append(node_s)
-
-        assert nx.is_connected(self), "Graph is not connected"
 
         while self.number_of_edges() < self.num_edges:
             node_1, node_2 = tuple(random.sample(list(self.nodes), 2))
@@ -85,7 +100,7 @@ class DataGraph(nx.Graph):
 
 def test():
     data_set = list(range(500))
-    G = DataGraph(data_set, num_nodes=7, num_edges=9)
+    G = DataGraph(data_set, num_nodes=7, num_edges=11, topo='cycle')
     pos = nx.spring_layout(G)
     nx.draw(G, pos)
     plt.show()
