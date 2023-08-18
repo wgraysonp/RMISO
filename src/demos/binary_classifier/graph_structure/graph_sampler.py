@@ -6,7 +6,7 @@ import os
 
 
 class GraphBatchSampler(Sampler):
-    def __init__(self, data_source, algorithm="uniform", load_graph=False, initial_state=0, num_nodes=10, num_edges=10, epoch_length=None):
+    def __init__(self, data_source, algorithm="uniform", load_graph=False, initial_state=2, num_nodes=10, num_edges=10, epoch_length=None):
         self.data_source = data_source
         self.alg_string = algorithm
         self.initial_state = initial_state

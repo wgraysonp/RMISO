@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Subset
 
 class DataGraph(nx.Graph):
 
-    def __init__(self, data_set, num_nodes=10, num_edges=9, topo='random', algorithm='uniform'):
+    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random', algorithm='uniform'):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
         if num_edges < num_nodes - 1:
@@ -33,9 +33,9 @@ class DataGraph(nx.Graph):
         self._connect_graph()
 
         if algorithm == 'uniform':
-            self.sampling_alg = Uniform(initial_state=0, graph=self)
+            self.sampling_alg = Uniform(initial_state=initial_state, graph=self)
         elif algorithm == 'metropolis_hastings':
-            self.sampling_alg = MetropolisHastings(initial_state=0, graph=self)
+            self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self)
 
     def _create_nodes(self):
         N = len(self.data_set)

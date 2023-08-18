@@ -23,7 +23,7 @@ def get_parser():
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
     parser.add_argument('--graph_topo', default='random', type=str, help='graph topology. May override edges argument',
-                        choice=['random', 'cycle'])
+                        choices=['random', 'cycle'])
     parser.add_argument('--model', default='one_layer', type=str, help='model',
                         choices=['one_layer', 'two_layer'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
@@ -56,7 +56,7 @@ def build_dataset(args):
     zero_one = True if args.model == "one_layer" else False
 
     train_set = CovType(train=True, zero_one=zero_one)
-    graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
+    graph = DataGraph(train_set, num_nodes=args.graph_size, initial_state=10,  num_edges=args.graph_edges, topo=args.graph_topo,
                       algorithm=args.sampling_algorithm)
 
     if args.save_graph:
@@ -74,7 +74,7 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
-                  gamma=1e-3, rho=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
+                  gamma=1e-3, rho=1, graph_size=10, graph_edges=10, graph_topo='random',  sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -86,7 +86,7 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'mcsag': 'lr{}-rho{}'.format(lr, rho),
     }[optimizer]
 
-    return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
+    return '{}-{}-{}-nodes{}-edges{}-{}-{}'.format(model, optimizer, name, graph_size, graph_edges, graph_topo, sampling_alg)
 
 
 def load_checkpoint(ckpt_name):
@@ -105,7 +105,7 @@ def build_model(args, device, ckpt=None):
     }[args.model]()
     net = net.to(device)
     if device == 'cuda':
-       # net = torch.nn.DataParallel(net)
+        net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
     if ckpt:
@@ -185,7 +185,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
         predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
-
+  
     accuracy = 100. * correct / total
     print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
@@ -229,7 +229,7 @@ def main():
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
                               graph_size=num_nodes, rho=args.rho, graph_edges=num_edges,
-                              sampling_alg=args.sampling_algorithm)
+                              sampling_alg=args.sampling_algorithm, graph_topo=args.graph_topo)
 
     if args.resume:
         ckpt = load_checkpoint(ckpt_name)
