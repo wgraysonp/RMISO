@@ -74,7 +74,7 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
-                  gamma=1e-3, rho=1, graph_size=10, graph_edges=10, graph_topo='random',  sampling_alg='uniform'):
+                  gamma=1e-3, rho=1, delta=1, graph_size=10, graph_edges=10, graph_topo='random',  sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -82,7 +82,7 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr{}-rho{}'.format(lr, rho),
+        'rmiso': 'lr{}-rho{}-delta{}'.format(lr, rho, delta),
         'mcsag': 'lr{}-rho{}'.format(lr, rho),
     }[optimizer]
 
@@ -227,7 +227,7 @@ def main():
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
-                              graph_size=num_nodes, rho=args.rho, graph_edges=num_edges,
+                              graph_size=num_nodes, rho=args.rho, delta=args.delta, graph_edges=num_edges,
                               sampling_alg=args.sampling_algorithm, graph_topo=args.graph_topo)
 
     if args.resume:
