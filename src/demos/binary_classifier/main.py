@@ -242,7 +242,7 @@ def main():
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.MSELoss() if args.model == "one_layer" else nn.SoftMarginLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1, last_epoch=start_epoch)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.25, last_epoch=start_epoch)
 
     if args.init_optimizer:
         initialize_optimizer(net, device, graph_loader, optimizer, criterion)
@@ -255,7 +255,7 @@ def main():
     for epoch in range(start_epoch + 1, 50):
         train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
-       # scheduler.step()
+        scheduler.step()
 
         if args.save:
          # Save checkpoint
