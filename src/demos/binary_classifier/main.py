@@ -178,7 +178,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        if isinstance(optimizer, RMISO):
+        if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()/n_iter
@@ -204,7 +204,6 @@ def test(net, device, data_loader, criterion):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
-
             test_loss += loss.item()/n_iter
             predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
             total += targets.size(0)
@@ -279,8 +278,8 @@ def main():
             test_accuracies.append(test_acc)
             if not os.path.isdir('curve'):
                 os.mkdir('curve')
-            torch.save({'train_acc': train_accuracies, 'train_loss': train_losses, 'test_acc': test_accuracies, 'test_loss': test_losses},
-                        os.path.join('curve', ckpt_name))
+            torch.save({'train_acc': train_accuracies, 'train_loss': train_losses, 'test_acc': test_accuracies,
+                        'test_loss': test_losses}, os.path.join('curve', ckpt_name))
 
 
 if __name__ == "__main__":
