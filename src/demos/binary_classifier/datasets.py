@@ -22,7 +22,7 @@ class CovType(Dataset):
         return self.features[idx], self.targets[idx]
 
     def _load_and_preprocess_data(self):
-        X, y = fetch_covtype(data_home="data", random_state=0, shuffle=True, return_X_y=True)
+        X, y = fetch_covtype(data_home="data", random_state=0, shuffle=False, return_X_y=True)
         if self.zero_one:
             y = np.array(list(map(lambda x: 1 if x == 2 else 0, y)))
         else:

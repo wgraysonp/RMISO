@@ -99,6 +99,7 @@ def load_checkpoint(ckpt_name):
 
 def build_model(args, device, ckpt=None):
     print('==> Building model..')
+    torch.manual_seed(10)
     net = {
         'one_layer': OneLayer,
         'two_layer': TwoLayer
@@ -180,8 +181,8 @@ def train(net, epoch, device, graph, optimizer, criterion):
         loss.backward()
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
-            print("optim cur node: {}".format(optimizer.curr_node))
         optimizer.step()
+        print("current node: {}".format(node_id))
         for p in net.parameters():
             print("post updated param: {}".format(p))
             print("grad: {}".format(p.grad))

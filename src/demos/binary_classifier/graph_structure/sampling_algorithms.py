@@ -40,6 +40,7 @@ class MetropolisHastings:
 
 
 class Uniform:
+    random.seed(0)
     def __init__(self, initial_state=0, graph=None):
         if graph is None:
             raise ValueError("Must provide graph object")
