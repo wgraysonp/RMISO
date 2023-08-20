@@ -49,7 +49,7 @@ class DataGraph(nx.Graph):
             batch_size = len(data_idx)
             data_subset = Subset(self.data_set, data_idx)
             loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
-            self.add_node(i, data=idxs[m * i:], loader=loader)
+            self.add_node(i, data=data_idx, loader=loader)
 
     def _connect_graph(self):
 

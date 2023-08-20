@@ -103,10 +103,23 @@ class RMISO(Optimizer):
 
                 avg_param_reg = avg_param.clone()
 
+                print("step size: {}".format(step_size))
+                print("L: {}".format(L))
+                print("reg: {}".format(alpha))
+                print("param: {}".format(param))
+                print("grad: {}".format(grad))
+                print("avg_param: {}".format(avg_param))
+                print("param dict: {}".format(self.param_dict[p]))
+                print("avg_grad: {}".format(avg_grad))
+                print("grad dict: {}".format(self.grad_dict[p]))
+                #print("node id : {}".format(self.curr_node))
+
                 avg_param_reg.mul_(1-alpha)
                 avg_param_reg.add_(param, alpha=alpha)
 
                 p.data = avg_param_reg.add(-avg_grad, alpha=step_size)
+
+               # print("post update param: {}".format(p.data))
 
                 #L = 1/group['lr']
                 #step_size = 1/(L + group['delta']*group['rho'])

@@ -56,7 +56,7 @@ def build_dataset(args):
     zero_one = True if args.model == "one_layer" else False
 
     train_set = CovType(train=True, zero_one=zero_one)
-    graph = DataGraph(train_set, num_nodes=args.graph_size, initial_state=10,  num_edges=args.graph_edges, topo=args.graph_topo,
+    graph = DataGraph(train_set, num_nodes=args.graph_size, initial_state=0,  num_edges=args.graph_edges, topo=args.graph_topo,
                       algorithm=args.sampling_algorithm)
 
     if args.save_graph:
@@ -105,7 +105,7 @@ def build_model(args, device, ckpt=None):
     }[args.model]()
     net = net.to(device)
     if device == 'cuda':
-        net = torch.nn.DataParallel(net)
+       # net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
     if ckpt:
@@ -180,7 +180,13 @@ def train(net, epoch, device, graph, optimizer, criterion):
         loss.backward()
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
+            print("optim cur node: {}".format(optimizer.curr_node))
         optimizer.step()
+        for p in net.parameters():
+            print("post updated param: {}".format(p))
+            print("grad: {}".format(p.grad))
+        for group in optimizer.param_groups:
+            print("lr: {}".format(group['lr']))
         train_loss += loss.item()/n_iter
         predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
         total += targets.size(0)
@@ -222,8 +228,8 @@ def main():
     graph_loader, test_loader = build_dataset(args)
     num_nodes = len(graph_loader.nodes)
     num_edges = len(graph_loader.edges)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+   # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu'
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
@@ -252,7 +258,7 @@ def main():
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch + 1, 50):
+    for epoch in range(start_epoch + 1, 5):
         train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
