@@ -29,6 +29,8 @@ def get_parser():
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
                         choices=['rmiso', 'mcsag', 'sgd', 'adagrad', 'adam', 'amsgrad', 'adabound', 'amsbound'])
     parser.add_argument('--lr', default=1, type=float, help='learning rate')
+    parser.add_argument('--start_factor', default=1, type=float, help='start factor for linear LR scheduler')
+    parser.add_argument('--total_sched_iters', default=1, type=float, help='last epoch in linear LR scheduler')
     parser.add_argument('--final_lr', default=0.1, type=float,
                         help='final learning rate of AdaBound')
     parser.add_argument('--gamma', default=1e-3, type=float,
@@ -74,7 +76,9 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
-                  gamma=1e-3, rho=1, delta=1, graph_size=10, graph_edges=10, graph_topo='random',  sampling_alg='uniform'):
+                  gamma=1e-3, rho=1, start_factor=1, total_iters=1,  delta=1, graph_size=10, graph_edges=10, graph_topo='random',  sampling_alg='uniform'):
+    initial_lr = start_factor*lr
+    final_lr = lr
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -82,8 +86,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr{}-rho{}-delta{}'.format(lr, rho, delta),
-        'mcsag': 'lr{}-rho{}'.format(lr, rho),
+        'rmiso': 'lr{}-rho{:f}-delta{:f}-initial_lr{:f}-final_lr{:f}-end{}'.format(lr, rho, delta, initial_lr, final_lr, total_iters),
+        'mcsag': 'lr{:f}-rho{:f}'.format(lr, rho),
     }[optimizer]
 
     return '{}-{}-{}-nodes{}-edges{}-{}-{}'.format(model, optimizer, name, graph_size, graph_edges, graph_topo, sampling_alg)
@@ -233,7 +237,7 @@ def main():
     device = 'cpu'
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
-                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
+                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,start_factor=args.start_factor, total_iters=args.total_sched_iters,
                               graph_size=num_nodes, rho=args.rho, delta=args.delta, graph_edges=num_edges,
                               sampling_alg=args.sampling_algorithm, graph_topo=args.graph_topo)
 
@@ -249,7 +253,7 @@ def main():
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.MSELoss() if args.model == "one_layer" else nn.SoftMarginLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.20, last_epoch=start_epoch)
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=args.start_factor, total_iters=args.total_sched_iters, verbose=True)
 
     if args.init_optimizer:
         initialize_optimizer(net, device, graph_loader, optimizer, criterion)
@@ -262,7 +266,7 @@ def main():
     for epoch in range(start_epoch + 1, 100):
         train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
-        #scheduler.step()
+        scheduler.step()
 
         if args.save:
          # Save checkpoint
