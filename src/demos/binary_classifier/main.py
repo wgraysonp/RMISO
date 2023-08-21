@@ -40,7 +40,7 @@ def get_parser():
     parser.add_argument('--dynamic_step', action='store_true',
                         help='rmiso and mcsag dynamic lr schedule')
     parser.add_argument('--beta1', default=0.9, type=float, help='Adam coefficients beta_1')
-    parser.add_argument('--beta2', default=0.999, type=float, help='Adam coefficients beta_2')
+    parser.add_argument('--beta2', default=0.99, type=float, help='Adam coefficients beta_2')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
@@ -182,12 +182,12 @@ def train(net, epoch, device, graph, optimizer, criterion):
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
-        print("current node: {}".format(node_id))
-        for p in net.parameters():
-            print("post updated param: {}".format(p))
-            print("grad: {}".format(p.grad))
-        for group in optimizer.param_groups:
-            print("lr: {}".format(group['lr']))
+        #print("current node: {}".format(node_id))
+        #for p in net.parameters():
+            #print("post updated param: {}".format(p))
+            #print("grad: {}".format(p.grad))
+        #for group in optimizer.param_groups:
+            #print("lr: {}".format(group['lr']))
         train_loss += loss.item()/n_iter
         predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
         total += targets.size(0)
@@ -249,7 +249,7 @@ def main():
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.MSELoss() if args.model == "one_layer" else nn.SoftMarginLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.25, last_epoch=start_epoch)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.20, last_epoch=start_epoch)
 
     if args.init_optimizer:
         initialize_optimizer(net, device, graph_loader, optimizer, criterion)
@@ -259,10 +259,10 @@ def main():
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch + 1, 5):
+    for epoch in range(start_epoch + 1, 100):
         train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
-        scheduler.step()
+        #scheduler.step()
 
         if args.save:
          # Save checkpoint
