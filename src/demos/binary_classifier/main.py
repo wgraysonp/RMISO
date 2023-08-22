@@ -76,7 +76,7 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
-                  gamma=1e-3, rho=1, start_factor=1, total_iters=1,  delta=1, graph_size=10, graph_edges=10, graph_topo='random',  sampling_alg='uniform'):
+                  gamma=1e-3, rho=1, start_factor=1, total_iters=1,  delta=1, graph_size=10, graph_edges=10, graph_topo='random', sampling_alg='uniform'):
     initial_lr = start_factor*lr
     final_lr = lr
     name = {
@@ -186,12 +186,6 @@ def train(net, epoch, device, graph, optimizer, criterion):
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
-        #print("current node: {}".format(node_id))
-        #for p in net.parameters():
-            #print("post updated param: {}".format(p))
-            #print("grad: {}".format(p.grad))
-        #for group in optimizer.param_groups:
-            #print("lr: {}".format(group['lr']))
         train_loss += loss.item()/n_iter
         predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
         total += targets.size(0)

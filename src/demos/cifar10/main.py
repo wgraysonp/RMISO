@@ -22,25 +22,32 @@ def get_parser():
                         choices=['uniform', 'metropolis_hastings'])
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
+    parser.add_argument('--graph_topo', default='random', type=str, help='model',
+                        choice=['random', 'cycle'])
     parser.add_argument('--model', default='resnet', type=str, help='model',
                         choices=['resnet', 'densenet'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
-                        choices=['rmiso', 'sgd', 'adagrad', 'adam', 'amsgrad', 'adabound', 'amsbound'])
+                        choices=['rmiso', 'sgd', 'adagrad', 'adam', 'amsgrad', 'adabound', 'amsbound', 'mcsag'])
     parser.add_argument('--lr', default=1, type=float, help='learning rate')
+    parser.add_argument('--start_factor', default=1, type=float, help='start factor for linear LR scheduler')
+    parser.add_argument('--total_sched_iters', default=1, type=float, help='last epoch in linear LR scheduler')
     parser.add_argument('--final_lr', default=0.1, type=float,
                         help='final learning rate of AdaBound')
     parser.add_argument('--gamma', default=1e-3, type=float,
                         help='convergence speed term of Adabound')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
+    parser.add_argument('--delta', default=1e-5, type=float, help='rmiso dynamic reg multiplier')
+    parser.add_argument('--tau', default=1, type=float, help='mcsag hitting time. set to 1 for o.g. sag')
     parser.add_argument('--dynamic_step', action='store_true',
-                        help='rmiso dynamic proximal regularization schedule')
+                        help='rmiso and mcsag dynamic lr schedule')
     parser.add_argument('--beta1', default=0.9, type=float, help='Adam coefficients beta_1')
     parser.add_argument('--beta2', default=0.999, type=float, help='Adam coefficients beta_2')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
-    parser.add_argument('--load_graph', action='store_true', help='load previously used graph')
+    parser.add_argument('--save_graph', action='store_true', help='save the data graph')
+    parser.add_argument('--save', action='store_true', help='save training curve')
     return parser
 
 
@@ -58,25 +65,16 @@ def build_dataset(args):
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    directory = os.path.join(os.getcwd(), "saved_graphs")
-    os.makedirs(directory, exist_ok=True)
-    f_name = "data_graph.pickle"
-    path = os.path.join(directory, f_name)
+    train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
+    graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
+                      algorithm=args.sampling_algorithm)
 
-    if args.load_graph:
-        try:
-            graph = pickle.load(open(path, 'rb'))
-            assert isinstance(graph, DataGraph), "Graph loaded is not the correct object."
-            print("Loading Graph-over-riding graph topology arguments")
-        except FileNotFoundError:
-            print("No graph available to load")
-            sys.exit(1)
-    else:
-        train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-        graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges,
-                          algorithm=args.sampling_algorithm)
-        if os.path.exists(path):
-            os.remove(path)
+    if args.save_graph:
+        directory = os.path.join(os.getcwd(), "saved_graphs")
+        os.makedirs(directory, exist_ok=True)
+        f_name = "data_graph-{}-{}-nodes{}-edges{}.pickle".format(args.sampling_algorithm, args.model,
+                                                                  args.graph_size, args.graph_edges)
+        path = os.path.join(directory, f_name)
         pickle.dump(graph, open(path, 'wb'))
 
     test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
@@ -86,7 +84,9 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
-                  rho=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
+                  rho=1, start_factor=1, total_iters=1, delta=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
+    initial_lr = start_factor*lr
+    final_lr = lr
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -94,7 +94,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'rho{}-lr{}-'.format(rho, lr)
+        'rmiso': 'lr{}-rho{:f}-delta{:f}-initial_lr{:f}-final_lr{:f}-end{}'.format(lr, rho, delta, initial_lr, final_lr, total_iters),
+        'mcsag': 'lr{:f}-rho{:f}'.format(lr, rho),
     }[optimizer]
     return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
@@ -138,7 +139,10 @@ def create_optimizer(args, num_nodes, model_params):
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, rho=args.rho)
+                     dynamic_step=args.dynamic_step, rho=args.rho, delta=args.delta)
+    elif args.optim == 'mcsag':
+        return MCSAG(model_params, args.lr, num_nodes=num_nodes,
+                     dynamic_step=args.dynamic_step, tau=args.tau, rho=args.rho)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma=args.gamma,
@@ -168,7 +172,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        if isinstance(optimizer, RMISO):
+        if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()
@@ -180,7 +184,7 @@ def train(net, epoch, device, graph, optimizer, criterion):
     print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
 
-    return accuracy
+    return accuracy, train_loss
 
 
 def test(net, device, data_loader, criterion):
@@ -193,7 +197,6 @@ def test(net, device, data_loader, criterion):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
-
             test_loss += loss.item()
             _, predicted = outputs.max(1)
             total += targets.size(0)
@@ -202,7 +205,7 @@ def test(net, device, data_loader, criterion):
     accuracy = 100. * correct / total
     print('test acc %.3f' % accuracy)
 
-    return accuracy
+    return accuracy, test_loss
 
 
 def main():
@@ -216,10 +219,9 @@ def main():
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
-                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
-                              graph_size=num_nodes, rho=args.rho,
-                              graph_edges=num_edges,
-                              sampling_alg=args.sampling_algorithm)
+                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma, start_factor=args.start_factor,
+                              total_iters=args.total_sched_iters, graph_size=num_nodes, rho=args.rho, delta=args.delta,
+                              graph_edges=num_edges, sampling_alg=args.sampling_algorithm)
 
     if args.resume:
         ckpt = load_checkpoint(ckpt_name)
@@ -233,32 +235,37 @@ def main():
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1,
-                                          last_epoch=start_epoch)
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=args.start_factor,
+                                            total_iters=args.total_sched_iters, verbose=True)
 
     train_accuracies = []
     test_accuracies = []
+    train_losses = []
+    test_losses = []
 
     for epoch in range(start_epoch + 1, 200):
+        train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
+        test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
-        train_acc = train(net, epoch, device, graph_loader, optimizer, criterion)
-        test_acc = test(net, device, test_loader, criterion)
 
-        # Save checkpoint.
-        if test_acc > best_acc:
-            print('Saving..')
-            state = {
-                'net': net.state_dict(),
-                'acc': test_acc,
-                'epoch': epoch,
-            }
-            if not os.path.isdir('checkpoint'):
-                os.mkdir('checkpoint')
-            torch.save(state, os.path.join('checkpoint', ckpt_name))
-            best_acc = test_acc
+        if args.save:
+            # Save checkpoint.
+            if test_acc > best_acc:
+                print('Saving..')
+                state = {
+                    'net': net.state_dict(),
+                    'acc': test_acc,
+                    'epoch': epoch,
+                }
+                if not os.path.isdir('checkpoint'):
+                    os.mkdir('checkpoint')
+                torch.save(state, os.path.join('checkpoint', ckpt_name))
+                best_acc = test_acc
 
-        train_accuracies.append(train_acc)
-        test_accuracies.append(test_acc)
+            train_accuracies.append(train_acc)
+            test_accuracies.append(test_acc)
+            train_losses.append(train_loss)
+            test_losses.append(test_loss)
         if not os.path.isdir('curve'):
             os.mkdir('curve')
         torch.save({'train_acc': train_accuracies, 'test_acc': test_accuracies},
