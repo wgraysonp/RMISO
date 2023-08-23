@@ -23,7 +23,7 @@ def get_parser():
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
     parser.add_argument('--graph_topo', default='random', type=str, help='model',
-                        choice=['random', 'cycle'])
+                        choices=['random', 'cycle'])
     parser.add_argument('--model', default='resnet', type=str, help='model',
                         choices=['resnet', 'densenet'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
