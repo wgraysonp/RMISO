@@ -67,24 +67,24 @@ def build_dataset(args):
     ])
 
     train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
-    #graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
-     #                 algorithm=args.sampling_algorithm)
+    graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
+                      algorithm=args.sampling_algorithm)
 
-    #if args.save_graph:
-        #directory = os.path.join(os.getcwd(), "saved_graphs")
-        #os.makedirs(directory, exist_ok=True)
-        #f_name = "data_graph-{}-{}-nodes{}-edges{}.pickle".format(args.sampling_algorithm, args.model,
-                                                                  #args.graph_size, args.graph_edges)
-        #path = os.path.join(directory, f_name)
-        #pickle.dump(graph, open(path, 'wb'))
-    batch_sampler = GraphBatchSampler(train_set, algorithm=args.sampling_algorithm, save_graph=args.save_graph,
-                                      num_nodes=args.graph_size, num_edges=args.graph_edges)
-    train_loader = DataLoader(train_set, batch_sampler=batch_sampler, num_workers=0)
+    if args.save_graph:
+        directory = os.path.join(os.getcwd(), "saved_graphs")
+        os.makedirs(directory, exist_ok=True)
+        f_name = "data_graph-{}-{}-nodes{}-edges{}.pickle".format(args.sampling_algorithm, args.model,
+                                                                  args.graph_size, args.graph_edges)
+        path = os.path.join(directory, f_name)
+        pickle.dump(graph, open(path, 'wb'))
+    #batch_sampler = GraphBatchSampler(train_set, algorithm=args.sampling_algorithm, save_graph=args.save_graph,
+                                      #num_nodes=args.graph_size, num_edges=args.graph_edges)
+    #train_loader = DataLoader(train_set, batch_sampler=batch_sampler, num_workers=2)
 
     test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
+    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=0)
 
-    return train_loader, test_loader
+    return graph, test_loader
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
@@ -158,53 +158,25 @@ def create_optimizer(args, num_nodes, model_params):
                         weight_decay=args.weight_decay, amsbound=True)
 
 
-#def train(net, epoch, device, graph, optimizer, criterion):
-    #print('\nEpoch: %d' % epoch)
-    #net.train()
-    #train_loss = 0
-    #correct = 0
-    #total = 0
-    #n_iter = len(graph.nodes)
-
-    #for _ in tqdm(range(n_iter)):
-        #node_id = graph.sample()
-        #loader = graph.nodes[node_id]['loader']
-        #assert len(loader) == 1, f"Data loader at node {node_id} has more than one batch"
-        #(inputs, targets) = next(iter(loader))
-        #inputs, targets = inputs.to(device), targets.to(device)
-        #optimizer.zero_grad()
-        #outputs = net(inputs)
-        #loss = criterion(outputs, targets)
-        #loss.backward()
-        #if isinstance(optimizer, (RMISO, MCSAG)):
-            #optimizer.set_current_node(node_id)
-        #optimizer.step()
-        #train_loss += loss.item()
-    #    _, predicted = outputs.max(1)
-     #   total += targets.size(0)
-    #    correct += predicted.eq(targets).sum().item()
-
-    #accuracy = 100. * correct / total
-   # print('loss: {:3f}'.format(train_loss))
-   # print('train acc %.3f' % accuracy)
-
-   # return accuracy, train_loss
-
-
-def train(net, device, epoch, optimizer, data_loader, criterion):
+def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
-    for (inputs, targets) in data_loader:
+    n_iter = len(graph.nodes)
+
+    for _ in tqdm(range(n_iter)):
+        node_id = graph.sample()
+        loader = graph.nodes[node_id]['loader']
+        assert len(loader) == 1, f"Data loader at node {node_id} has more than one batch"
+        (inputs, targets) = next(iter(loader))
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
         if isinstance(optimizer, (RMISO, MCSAG)):
-            node_id = data_loader.batch_sampler.state
             optimizer.set_current_node(node_id)
         optimizer.step()
         train_loss += loss.item()
@@ -212,11 +184,39 @@ def train(net, device, epoch, optimizer, data_loader, criterion):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-    accuracy = 100. * correct/total
+    accuracy = 100. * correct / total
     print('loss: {:3f}'.format(train_loss))
     print('train acc %.3f' % accuracy)
 
     return accuracy, train_loss
+
+
+#def train(net, device, epoch, optimizer, data_loader, criterion):
+    #print('\nEpoch: %d' % epoch)
+    #net.train()
+    #train_loss = 0
+    #correct = 0
+    #total = 0
+    #for (inputs, targets) in tqdm(data_loader):
+        #inputs, targets = inputs.to(device), targets.to(device)
+        #optimizer.zero_grad()
+        #outputs = net(inputs)
+        #loss = criterion(outputs, targets)
+        #loss.backward()
+        #if isinstance(optimizer, (RMISO, MCSAG)):
+            #node_id = data_loader.batch_sampler.state
+            #optimizer.set_current_node(node_id)
+        #optimizer.step()
+        #train_loss += loss.item()
+        #_, predicted = outputs.max(1)
+        #total += targets.size(0)
+        #correct += predicted.eq(targets).sum().item()
+
+    #accuracy = 100. * correct/total
+    #print('loss: {:3f}'.format(train_loss))
+    #print('train acc %.3f' % accuracy)
+
+    #return accuracy, train_loss
 
 
 def test(net, device, data_loader, criterion):
@@ -264,7 +264,7 @@ def main():
 
     net = build_model(args, device, ckpt=ckpt)
     criterion = nn.CrossEntropyLoss()
-    optimizer = create_optimizer(args, args.num_nodes, net.parameters())
+    optimizer = create_optimizer(args, args.graph_size, net.parameters())
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=args.start_factor,
                                             total_iters=args.total_sched_iters, verbose=True)
 
@@ -274,8 +274,8 @@ def main():
     test_losses = []
 
     for epoch in range(start_epoch + 1, 200):
-        #train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
-        train_acc, train_loss = train(net, device, epoch, optimizer, train_loader, criterion)
+        train_acc, train_loss = train(net, epoch, device, train_loader, optimizer, criterion)
+        #train_acc, train_loss = train(net, device, epoch, optimizer, train_loader, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
 
