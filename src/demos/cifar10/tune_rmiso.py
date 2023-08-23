@@ -10,6 +10,7 @@ from models import *
 from custom_optimizers.RMISO import RMISO
 from custom_optimizers.MCSAG import MCSAG
 from graph_structure.data_graph import DataGraph
+from regularization_scheduler import RegScheduler
 
 
 def get_parser():
@@ -148,6 +149,7 @@ def main():
     net = build_model(args, device, ckpt=None)
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
+    reg_scheduler = RegScheduler(optimizer, name='rho', stepsize=10, gamma=2)
     
     if args.init_rmiso:
         initialize_optimizer(net, device, graph, optimizer, criterion)
@@ -156,6 +158,7 @@ def main():
 
     for epoch in range(start_epoch + 1, 200):
         train_acc = train(net, epoch, device, graph, optimizer, criterion)
+        reg_scheduler.step()
 
         train_accuracies.append(train_acc)
 
