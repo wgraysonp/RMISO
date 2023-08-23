@@ -70,70 +70,31 @@ class RMISO(Optimizer):
                     state['return_time'][self.curr_node] = 0
                     group['rho'] = torch.max(state['return_time'])
 
-                avg_grad = state['avg_grad']
-                avg_param = state['avg_param']
                 state['step'] += 1
 
-                #pi = 1/self.num_nodes
-
-                #if self.curr_node in self.grad_dict[p]:
-                    #last_grad = self.grad_dict[p][self.curr_node].clone()
-                    #avg_grad.add_(grad - last_grad, alpha=pi)
-                #else:
-                   # last_grad = torch.zeros_like(p.data)
-                    #avg_grad.add_(grad, alpha=pi)
-
                 self.grad_dict[p][self.curr_node] = grad.detach().clone()
-               # pi = 1/len(self.grad_dict[p])
 
-                #avg_grad.add_(grad - last_grad, alpha=pi)
                 grad_list = list(self.grad_dict[p].values())
                 avg_grad = torch.mean(torch.stack(grad_list), dim=0)
                 state['avg_grad'] = avg_grad
 
                 param = p.data
 
-               # if self.curr_node in self.param_dict[p]:
-                    #last_param = self.param_dict[p][self.curr_node]
-                    #avg_param.add_(param - last_param, alpha=pi)
-                #else:
-                    #avg_param.add_(param, alpha=pi)
-
                 self.param_dict[p][self.curr_node] = param.detach().clone()
                 param_list = list(self.param_dict[p].values())
                 avg_param = torch.mean(torch.stack(param_list), dim=0)
                 state['avg_param'] = avg_param
 
-                # New implementation
                 L = 1/group['lr']
                 step_size = 1/(L + group['delta']*group['rho'])
                 alpha = group['delta']*group['rho']*step_size
 
                 avg_param_reg = avg_param.clone()
-                #print("step size: {}".format(step_size))
-                #print("L: {}".format(L))
-                #print("reg: {}".format(alpha))
-                #print("param: {}".format(param))
-                #print("grad: {}".format(grad))
-                #print("avg_param: {}".format(avg_param))
-                #print("param dict: {}".format(self.param_dict[p]))
-                #print("avg_grad: {}".format(avg_grad))
-                #print("grad dict: {}".format(self.grad_dict[p]))
-                #print("node id : {}".format(self.curr_node))
 
                 avg_param_reg.mul_(1-alpha)
                 avg_param_reg.add_(param, alpha=alpha)
 
                 p.data = avg_param_reg.add(-avg_grad, alpha=step_size)
-
-               # print("post update param: {}".format(p.data))
-
-                #L = 1/group['lr']
-                #step_size = 1/(L + group['delta']*group['rho'])
-
-                #p.data.mul_(group['delta']*group['rho']*step_size)
-                #p.data.add_(avg_param, alpha=L*step_size)
-                #p.data.add_(-avg_grad, alpha=step_size)
 
         return loss
 

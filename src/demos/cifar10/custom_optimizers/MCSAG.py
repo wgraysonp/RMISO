@@ -4,12 +4,12 @@ from torch.optim import Optimizer
 
 class MCSAG(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, rho=0, dynamic_step=False):
+    def __init__(self, params, lr, num_nodes=10, rho=0, tau=1, dynamic_step=False):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= rho:
             raise ValueError("Invalid step parameter: {}".format(rho))
-        defaults = dict(lr=lr, rho=rho, dynamic_step=dynamic_step)
+        defaults = dict(lr=lr, rho=rho, tau=tau, dynamic_step=dynamic_step)
         super(MCSAG, self).__init__(params, defaults)
         self.num_nodes = num_nodes
         self.curr_node = 0
@@ -60,24 +60,16 @@ class MCSAG(Optimizer):
                     state['return_time'][self.curr_node] = 0
                     group['rho'] = torch.max(state['return_time'])
 
-                avg_grad = state['avg_grad']
                 state['step'] += 1
 
-                pi = 1/self.num_nodes
-
-                if self.curr_node in self.grad_dict[p]:
-                    last_grad = self.grad_dict[p][self.curr_node]
-                    avg_grad.add_(grad - last_grad, alpha=pi)
-                else:
-                    avg_grad.add_(grad, alpha=pi)
-
                 self.grad_dict[p][self.curr_node] = grad.detach().clone()
+                grad_list = list(self.grad_dict[p].values())
+                avg_grad = torch.mean(torch.stack(grad_list), dim=0)
+
                 state['avg_grad'] = avg_grad
 
                 L = 1/group['lr']
-                t = self.num_nodes
-                #TODO: Need to add t_mix where t is
-                denom = 2*L*(t + group['rho'])
+                denom = L*(group['tau'] + group['rho'])
                 step_size = 1/denom
 
                 p.data.add_(-avg_grad, alpha=step_size)

@@ -60,16 +60,7 @@ class MCSAG(Optimizer):
                     state['return_time'][self.curr_node] = 0
                     group['rho'] = torch.max(state['return_time'])
 
-                avg_grad = state['avg_grad']
                 state['step'] += 1
-
-                #pi = 1/self.num_nodes
-
-                #if self.curr_node in self.grad_dict[p]:
-                    #last_grad = self.grad_dict[p][self.curr_node]
-                    #avg_grad.add_(grad - last_grad, alpha=pi)
-                #else:
-                    #avg_grad.add_(grad, alpha=pi)
 
                 self.grad_dict[p][self.curr_node] = grad.detach().clone()
                 grad_list = list(self.grad_dict[p].values())

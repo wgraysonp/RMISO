@@ -52,7 +52,6 @@ class DataGraph(nx.Graph):
             self.add_node(i, data=data_idx, loader=loader)
 
     def _connect_graph(self):
-
         if self.topo == "random":
             self._connect_random()
         elif self.topo == "cycle":

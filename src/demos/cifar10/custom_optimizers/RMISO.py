@@ -10,6 +10,8 @@ class RMISO(Optimizer):
             raise ValueError("Invalid regularization parameter: {}".format(rho))
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
+        if not 0.0 <= delta:
+            raise ValueError("Invalid multiplier: {}".format(delta))
         if not dynamic_step:
             delta = 1
         defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta)
@@ -70,38 +72,31 @@ class RMISO(Optimizer):
                     state['return_time'][self.curr_node] = 0
                     group['rho'] = torch.max(state['return_time'])
 
-                avg_grad = state['avg_grad']
-                avg_param = state['avg_param']
                 state['step'] += 1
 
-                pi = 1/self.num_nodes
-
-                if self.curr_node in self.grad_dict[p]:
-                    last_grad = self.grad_dict[p][self.curr_node]
-                    avg_grad.add_(grad - last_grad, alpha=pi)
-                else:
-                    avg_grad.add_(grad, alpha=pi)
-
                 self.grad_dict[p][self.curr_node] = grad.detach().clone()
+
+                grad_list = list(self.grad_dict[p].values())
+                avg_grad = torch.mean(torch.stack(grad_list), dim=0)
                 state['avg_grad'] = avg_grad
 
                 param = p.data
 
-                if self.curr_node in self.param_dict[p]:
-                    last_param = self.param_dict[p][self.curr_node]
-                    avg_param.add_(param - last_param, alpha=pi)
-                else:
-                    avg_param.add_(param, alpha=pi)
-
                 self.param_dict[p][self.curr_node] = param.detach().clone()
+                param_list = list(self.param_dict[p].values())
+                avg_param = torch.mean(torch.stack(param_list), dim=0)
                 state['avg_param'] = avg_param
 
                 L = 1/group['lr']
                 step_size = 1/(L + group['delta']*group['rho'])
+                alpha = group['delta']*group['rho']*step_size
 
-                p.data.mul_(group['delta']*group['rho']*step_size)
-                p.data.add_(avg_param, alpha=L*step_size)
-                p.data.add_(-avg_grad, alpha=step_size)
+                avg_param_reg = avg_param.clone()
+
+                avg_param_reg.mul_(1 - alpha)
+                avg_param_reg.add_(param, alpha=alpha)
+
+                p.data = avg_param_reg.add(-avg_grad, alpha=step_size)
 
         return loss
 

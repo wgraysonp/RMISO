@@ -1,14 +1,15 @@
 import networkx as nx
+from networkx.utils import pairwise
 import random
 import matplotlib.pyplot as plt
-from sampling_algorithms import Uniform, MetropolisHastings
+from .sampling_algorithms import Uniform, MetropolisHastings
 import torch
 from torch.utils.data import DataLoader, Subset
 
 
 class DataGraph(nx.Graph):
 
-    def __init__(self, data_set, num_nodes=10, num_edges=9, algorithm='uniform'):
+    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random', algorithm='uniform'):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
         if num_edges < num_nodes - 1:
@@ -23,14 +24,15 @@ class DataGraph(nx.Graph):
         self.data_set = data_set
         self.num_nodes = num_nodes
         self.num_edges = num_edges
+        self.topo = topo
 
         self._create_nodes()
         self._connect_graph()
 
         if algorithm == 'uniform':
-            self.sampling_alg = Uniform(initial_state=0, graph=self)
+            self.sampling_alg = Uniform(initial_state=initial_state, graph=self)
         elif algorithm == 'metropolis_hastings':
-            self.sampling_alg = MetropolisHastings(initial_state=0, graph=self)
+            self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self)
 
     def _create_nodes(self):
         N = len(self.data_set)
@@ -47,6 +49,22 @@ class DataGraph(nx.Graph):
             self.add_node(i, data=idxs[m * i:], loader=loader)
 
     def _connect_graph(self):
+        if self.topo == "random":
+            self._connect_random()
+        elif self.topo == "cycle":
+            self._connect_cycle()
+            self.num_edges = len(self.edges)
+        else:
+            raise ValueError("Graph topology not supported")
+
+        assert nx.is_connected(self), "Graph is not connected"
+
+    def _connect_cycle(self):
+        self.add_edges_from(pairwise(self.nodes, cyclic=True))
+
+    def _connect_random(self):
+        random.seed(a=4)
+
         S, T = list(self.nodes), []
 
         node_s = random.sample(S, 1).pop()
