@@ -6,27 +6,19 @@ import os
 
 
 class GraphBatchSampler(Sampler):
-    def __init__(self, data_source, algorithm="uniform", load_graph=False, initial_state=0, num_nodes=10, num_edges=10, epoch_length=None):
+    def __init__(self, data_source, algorithm="uniform", save_graph=False, initial_state=0, num_nodes=10, num_edges=10, epoch_length=None):
         self.data_source = data_source
         self.alg_string = algorithm
         self.initial_state = initial_state
+        source_indices = list(range(len(data_source)))
+        self.graph = Graph(source_indices, num_nodes=num_nodes, num_edges=num_edges)
 
-        dir = os.path.join(os.getcwd(), "saved_graphs")
-        os.makedirs(dir, exist_ok=True)
-        fname = "data_graph.pickle"
-        path = os.path.join(dir, fname)
-
-        if load_graph:
-            if not os.path.exists(path):
-                raise ValueError("No saved graph available")
-            print("loading graph -- overriding num_nodes and num_edges")
-            self.graph = pickle.load(open(path, "rb"))
-        else:
-            source_indices = list(range(data_source.__len__()))
-            self.graph = Graph(source_indices, num_nodes=num_nodes, num_edges=num_edges)
-            if os.path.exists(path):
-                os.remove(path)
-            pickle.dump(self.graph, open(path, "wb"))
+        if save_graph:
+            dir = os.path.join(os.getcwd(), "../saved_graphs")
+            os.makedirs(dir, exist_ok=True)
+            f_name = "data_graph-{}-nodes{}-edges{}.pickle".format(algorithm, num_nodes, num_edges)
+            path = os.path.join(dir, f_name)
+            pickle.dump(self.graph, open(path, 'wb'))
 
         if epoch_length is not None:
             self.epoch_length = epoch_length
