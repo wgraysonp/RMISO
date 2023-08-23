@@ -7,13 +7,11 @@ from tqdm import tqdm
 import os
 import argparse
 import pickle
-import sys
 
 from models import *
 from custom_optimizers import *
 from adabound import AdaBound
 
-from graph_structure.graph_sampler import GraphBatchSampler
 from graph_structure.data_graph import DataGraph
 
 
@@ -77,9 +75,6 @@ def build_dataset(args):
                                                                   args.graph_size, args.graph_edges)
         path = os.path.join(directory, f_name)
         pickle.dump(graph, open(path, 'wb'))
-    #batch_sampler = GraphBatchSampler(train_set, algorithm=args.sampling_algorithm, save_graph=args.save_graph,
-                                      #num_nodes=args.graph_size, num_edges=args.graph_edges)
-    #train_loader = DataLoader(train_set, batch_sampler=batch_sampler, num_workers=2)
 
     test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=0)
@@ -191,34 +186,6 @@ def train(net, epoch, device, graph, optimizer, criterion):
     return accuracy, train_loss
 
 
-#def train(net, device, epoch, optimizer, data_loader, criterion):
-    #print('\nEpoch: %d' % epoch)
-    #net.train()
-    #train_loss = 0
-    #correct = 0
-    #total = 0
-    #for (inputs, targets) in tqdm(data_loader):
-        #inputs, targets = inputs.to(device), targets.to(device)
-        #optimizer.zero_grad()
-        #outputs = net(inputs)
-        #loss = criterion(outputs, targets)
-        #loss.backward()
-        #if isinstance(optimizer, (RMISO, MCSAG)):
-            #node_id = data_loader.batch_sampler.state
-            #optimizer.set_current_node(node_id)
-        #optimizer.step()
-        #train_loss += loss.item()
-        #_, predicted = outputs.max(1)
-        #total += targets.size(0)
-        #correct += predicted.eq(targets).sum().item()
-
-    #accuracy = 100. * correct/total
-    #print('loss: {:3f}'.format(train_loss))
-    #print('train acc %.3f' % accuracy)
-
-    #return accuracy, train_loss
-
-
 def test(net, device, data_loader, criterion):
     net.eval()
     test_loss = 0
@@ -275,7 +242,6 @@ def main():
 
     for epoch in range(start_epoch + 1, 200):
         train_acc, train_loss = train(net, epoch, device, train_loader, optimizer, criterion)
-        #train_acc, train_loss = train(net, device, epoch, optimizer, train_loader, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
 
@@ -299,8 +265,8 @@ def main():
             test_losses.append(test_loss)
         if not os.path.isdir('curve'):
             os.mkdir('curve')
-        torch.save({'train_acc': train_accuracies, 'test_acc': test_accuracies},
-                   os.path.join('curve', ckpt_name))
+        torch.save({'train_acc': train_accuracies, 'test_acc': test_accuracies, 'train_loss': train_losses,
+                    'test_loss': test_losses}, os.path.join('curve', ckpt_name))
 
 
 if __name__ == "__main__":
