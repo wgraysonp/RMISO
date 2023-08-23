@@ -13,6 +13,7 @@ from custom_optimizers import *
 from adabound import AdaBound
 
 from graph_structure.data_graph import DataGraph
+from regularization_scheduler import RegScheduler
 
 
 def get_parser():
@@ -32,6 +33,8 @@ def get_parser():
     parser.add_argument('--total_sched_iters', default=1, type=float, help='last epoch in linear LR scheduler')
     parser.add_argument('--final_lr', default=0.1, type=float,
                         help='final learning rate of AdaBound')
+    parser.add_argument('--reg_step', default=200, type=float, help='reg scheduler step size')
+    parser.add_argument('--reg_gamma', default=1, type=float, help='reg scheduler growth rate')
     parser.add_argument('--gamma', default=1e-3, type=float,
                         help='convergence speed term of Adabound')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
@@ -234,6 +237,8 @@ def main():
     optimizer = create_optimizer(args, args.graph_size, net.parameters())
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=args.start_factor,
                                             total_iters=args.total_sched_iters, verbose=True)
+    reg_scheduler = RegScheduler(optimizer, name='rho', stepsize=args.reg_step, gamma=args.reg_gamma,
+                                    verbose=True)
 
     train_accuracies = []
     test_accuracies = []
@@ -244,6 +249,7 @@ def main():
         train_acc, train_loss = train(net, epoch, device, train_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
+        reg_scheduler.step()
 
         if args.save:
             # Save checkpoint.
@@ -263,10 +269,10 @@ def main():
             test_accuracies.append(test_acc)
             train_losses.append(train_loss)
             test_losses.append(test_loss)
-        if not os.path.isdir('curve'):
-            os.mkdir('curve')
-        torch.save({'train_acc': train_accuracies, 'test_acc': test_accuracies, 'train_loss': train_losses,
-                    'test_loss': test_losses}, os.path.join('curve', ckpt_name))
+            if not os.path.isdir('curve'):
+                os.mkdir('curve')
+            torch.save({'train_acc': train_accuracies, 'test_acc': test_accuracies, 'train_loss': train_losses,
+                        'test_loss': test_losses}, os.path.join('curve', ckpt_name))
 
 
 if __name__ == "__main__":
