@@ -245,11 +245,11 @@ def main():
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch + 1, 200):
+    for epoch in range(start_epoch + 1, 120):
         train_acc, train_loss = train(net, epoch, device, train_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
-        reg_scheduler.step()
+       # reg_scheduler.step()
 
         if args.save:
             # Save checkpoint.
