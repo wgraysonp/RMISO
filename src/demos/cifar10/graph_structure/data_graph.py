@@ -2,20 +2,27 @@ import networkx as nx
 from networkx.utils import pairwise
 import random
 import matplotlib.pyplot as plt
-from .sampling_algorithms import Uniform, MetropolisHastings
+if __name__ == "__main__":
+    from sampling_algorithms import Uniform, MetropolisHastings
+else:
+    from .sampling_algorithms import Uniform, MetropolisHastings
 import torch
 from torch.utils.data import DataLoader, Subset
 
 
 class DataGraph(nx.Graph):
 
-    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random', algorithm='uniform'):
+    random.seed(4)
+
+    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random',
+                 radius=0.3, algorithm='uniform'):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
-        if num_edges < num_nodes - 1:
-            raise ValueError("Number of edges must be at least {}".format(num_nodes - 1))
-        if num_edges > num_nodes*(num_nodes-1)/2:
-            raise ValueError("Number of edges can be no larger than {}".format(num_nodes*(num_nodes-1)/2))
+        if topo == "random":
+            if num_edges < num_nodes - 1:
+                raise ValueError("Number of edges must be at least {}".format(num_nodes - 1))
+            if num_edges > num_nodes*(num_nodes-1)/2:
+                raise ValueError("Number of edges can be no larger than {}".format(num_nodes*(num_nodes-1)/2))
         if algorithm not in ['uniform', 'metropolis_hastings']:
             raise ValueError("Invalid sampling algorithm")
 
@@ -24,6 +31,7 @@ class DataGraph(nx.Graph):
         self.data_set = data_set
         self.num_nodes = num_nodes
         self.num_edges = num_edges
+        self.radius = radius
         self.topo = topo
 
         self._create_nodes()
@@ -46,7 +54,8 @@ class DataGraph(nx.Graph):
             batch_size = len(data_idx)
             data_subset = Subset(self.data_set, data_idx)
             loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
-            self.add_node(i, data=idxs[m * i:], loader=loader)
+            pos = tuple(random.random() for k in range(2))
+            self.add_node(i, pos=pos, data=idxs[m * i:], loader=loader)
 
     def _connect_graph(self):
         if self.topo == "random":
@@ -54,16 +63,21 @@ class DataGraph(nx.Graph):
         elif self.topo == "cycle":
             self._connect_cycle()
             self.num_edges = len(self.edges)
+        elif self.topo == "geometric":
+            self._connect_geometric(self.radius)
         else:
             raise ValueError("Graph topology not supported")
 
         assert nx.is_connected(self), "Graph is not connected"
 
     def _connect_cycle(self):
-        self.add_edges_from(pairwise(self.nodes, cyclic=True))
+        #self.add_edges_from(pairwise(self.nodes, cyclic=True))
+        self.add_edges_from(nx.cycle_graph(self.nodes).edges)
+
+    def _connect_geometric(self, r):
+        self.add_edges_from(nx.geometric_edges(self, r))
 
     def _connect_random(self):
-        random.seed(a=4)
 
         S, T = list(self.nodes), []
 
@@ -97,14 +111,12 @@ class DataGraph(nx.Graph):
 
 def test():
     data_set = list(range(100))
-    G = DataGraph(data_set, num_nodes=40, num_edges=70)
+    G = DataGraph(data_set, num_nodes=50, num_edges=70, radius=0.5, topo="geometric", algorithm="metropolis_hastings")
     pos = nx.spring_layout(G)
-    nx.draw(G, pos)
+    for _ in range(10):
+        print(G.sample())
+    nx.draw(G, pos, with_labels=True)
     plt.show()
-    node = 1
-    print(len(G.nodes[node]['loader']))
-    print(len(G.edges))
-    #print([n for n in G.neighbors(node)])
 
 
 if __name__=="__main__":

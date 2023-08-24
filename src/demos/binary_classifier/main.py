@@ -23,7 +23,8 @@ def get_parser():
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
     parser.add_argument('--graph_topo', default='random', type=str, help='graph topology. May override edges argument',
-                        choices=['random', 'cycle'])
+                        choices=['random', 'cycle', 'geometric'])
+    parser.add_argument('--radius', default=0.5, type=float, help='connection radius for geometric graph on unit square')
     parser.add_argument('--model', default='one_layer', type=str, help='model',
                         choices=['one_layer', 'two_layer'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',

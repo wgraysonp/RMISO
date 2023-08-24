@@ -23,7 +23,9 @@ def get_parser():
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
     parser.add_argument('--graph_topo', default='random', type=str, help='model',
-                        choices=['random', 'cycle'])
+                        choices=['random', 'cycle', 'geometric'])
+    parser.add_argument('--radius', default=0.5, type=float,
+                        help='connection radius for geometric graph on unit square')
     parser.add_argument('--model', default='resnet', type=str, help='model',
                         choices=['resnet', 'densenet'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
@@ -69,7 +71,7 @@ def build_dataset(args):
 
     train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
     graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
-                      algorithm=args.sampling_algorithm)
+                      radius=args.radius, algorithm=args.sampling_algorithm)
 
     if args.save_graph:
         directory = os.path.join(os.getcwd(), "saved_graphs")
