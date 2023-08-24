@@ -154,6 +154,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
     reg_scheduler = RegScheduler(optimizer, name='rho', stepsize=10, gamma=2, verbose=True)
+    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-3, total_iters=20)
     
     if args.init_rmiso:
         initialize_optimizer(net, device, graph, optimizer, criterion)
@@ -162,6 +163,7 @@ def main():
 
     for epoch in range(start_epoch + 1, 10):
         train_acc = train(net, epoch, device, graph, optimizer, criterion)
+        scheduler.step()
         #reg_scheduler.step()
 
         train_accuracies.append(train_acc)
