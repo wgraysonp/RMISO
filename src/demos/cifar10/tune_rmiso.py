@@ -53,7 +53,7 @@ def build_dataset(args):
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
 
-    graph = DataGraph(train_subset, num_nodes=50, num_edges=190, algorithm=args.sampling_algorithm, topo='geometric', radius=0.3)
+    graph = DataGraph(train_subset, num_nodes=10, num_edges=190, algorithm=args.sampling_algorithm, topo='cycle', radius=0.3)
     return graph
 
 
@@ -124,7 +124,6 @@ def train(net, epoch, device, graph, optimizer, criterion):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
         loss.backward()
-        print("curr_node: {}".format(node_id))
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
@@ -154,16 +153,16 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = create_optimizer(args, num_nodes, net.parameters())
     reg_scheduler = RegScheduler(optimizer, name='rho', stepsize=10, gamma=2, verbose=True)
-    scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-3, total_iters=20)
+   # scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=1e-3, total_iters=20, verbose=True)
     
     if args.init_rmiso:
         initialize_optimizer(net, device, graph, optimizer, criterion)
 
     train_accuracies = []
 
-    for epoch in range(start_epoch + 1, 10):
+    for epoch in range(start_epoch + 1, 20):
         train_acc = train(net, epoch, device, graph, optimizer, criterion)
-        scheduler.step()
+       # scheduler.step()
         #reg_scheduler.step()
 
         train_accuracies.append(train_acc)
