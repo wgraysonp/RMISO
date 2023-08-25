@@ -72,6 +72,7 @@ def build_dataset(args):
     train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
     graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
                       radius=args.radius, algorithm=args.sampling_algorithm)
+    train_eval_loader = DataLoader(train_set, batch_size=100, shuffle=False, num_workers=2)
 
     if args.save_graph:
         directory = os.path.join(os.getcwd(), "saved_graphs")
@@ -82,9 +83,9 @@ def build_dataset(args):
         pickle.dump(graph, open(path, 'wb'))
 
     test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
-    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
 
-    return graph, test_loader
+    return graph, train_eval_loader, test_loader
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
@@ -134,7 +135,7 @@ def create_optimizer(args, num_nodes, model_params):
         return optim.SGD(model_params, args.lr, momentum=args.momentum,
                          weight_decay=args.weight_decay)
     elif args.optim == 'adagrad':
-        return optim.Adam(model_params, args.lr, weight_decay=args.weight_decay)
+        return optim.Adagrad(model_params, args.lr, weight_decay=args.weight_decay)
     elif args.optim == 'adam':
         return optim.Adam(model_params, args.lr, betas=(args.beta1, args.beta2),
                           weight_decay=args.weight_decay)
@@ -143,10 +144,12 @@ def create_optimizer(args, num_nodes, model_params):
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, rho=args.rho, delta=args.delta)
+                     dynamic_step=args.dynamic_step, rho=args.rho,
+                     delta=args.delta, weight_decay=args.weight_decay)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, tau=args.tau, rho=args.rho)
+                     dynamic_step=args.dynamic_step, tau=args.tau,
+                     rho=args.rho, weight_decay=args.weight_decay)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma=args.gamma,
@@ -161,9 +164,6 @@ def create_optimizer(args, num_nodes, model_params):
 def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
-    train_loss = 0
-    correct = 0
-    total = 0
     n_iter = len(graph.nodes)
 
     for _ in tqdm(range(n_iter)):
@@ -179,44 +179,37 @@ def train(net, epoch, device, graph, optimizer, criterion):
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
-        train_loss += loss.item()
-        _, predicted = outputs.max(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
-
-    accuracy = 100. * correct / total
-    print('loss: {:3f}'.format(train_loss))
-    print('train acc %.3f' % accuracy)
-
-    return accuracy, train_loss
 
 
-def test(net, device, data_loader, criterion):
+def evaluate(net, device, data_loader, criterion, data_set="test"):
     net.eval()
-    test_loss = 0
+    eval_loss = 0
     correct = 0
     total = 0
+    n = len(data_loader)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(data_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
-            test_loss += loss.item()
+            # divide by number of batches to get average loss
+            eval_loss += loss.item()/n
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
     accuracy = 100. * correct / total
-    print('test acc %.3f' % accuracy)
+    print('{} acc {:.3f}'.format(data_set, accuracy))
+    print('{} loss {:.3f}'.format(data_set, eval_loss))
 
-    return accuracy, test_loss
+    return accuracy, eval_loss
 
 
 def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    train_loader, test_loader = build_dataset(args)
+    graph, train_eval_loader, test_loader = build_dataset(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
@@ -239,8 +232,6 @@ def main():
     optimizer = create_optimizer(args, args.graph_size, net.parameters())
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=args.start_factor,
                                             total_iters=args.total_sched_iters, verbose=True)
-    reg_scheduler = RegScheduler(optimizer, name='rho', stepsize=args.reg_step, gamma=args.reg_gamma,
-                                    verbose=True)
 
     train_accuracies = []
     test_accuracies = []
@@ -248,10 +239,10 @@ def main():
     test_losses = []
 
     for epoch in range(start_epoch + 1, 120):
-        train_acc, train_loss = train(net, epoch, device, train_loader, optimizer, criterion)
-        test_acc, test_loss = test(net, device, test_loader, criterion)
+        train(net, epoch, device, graph, optimizer, criterion)
+        train_acc, train_loss = evaluate(net, device, train_eval_loader, criterion, data_set="train")
+        test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set="test")
         scheduler.step()
-       # reg_scheduler.step()
 
         if args.save:
             # Save checkpoint.

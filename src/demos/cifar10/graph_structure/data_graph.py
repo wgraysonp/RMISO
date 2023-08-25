@@ -111,12 +111,24 @@ class DataGraph(nx.Graph):
 
 def test():
     data_set = list(range(100))
-    G = DataGraph(data_set, num_nodes=50, num_edges=70, radius=0.5, topo="geometric", algorithm="metropolis_hastings")
-    pos = nx.spring_layout(G)
+    G = DataGraph(data_set, num_nodes=100, num_edges=70, radius=0.3, topo="geometric", algorithm="metropolis_hastings")
+    #pos = nx.spring_layout(G)
+    pos = {node: G.nodes[node]['pos'] for node in G.nodes}
     for _ in range(10):
         print(G.sample())
     nx.draw(G, pos, with_labels=True)
     plt.show()
+
+
+def plot_graph(nodes, edges=100, radius=0.3, topo="random"):
+    data_set = list(range(nodes))
+    G = DataGraph(data_set, num_nodes=nodes, num_edges=edges, radius=radius, topo=topo)
+    if topo == "geometric":
+        pos = {node: G.nodes[node]['pos'] for node in G.nodes}
+    else:
+        pos = nx.spring_layout(G)
+    fig, ax = plt.subplots()
+    return fig, nx.draw(G, pos, with_labels=True, ax=ax)
 
 
 if __name__=="__main__":

@@ -4,7 +4,7 @@ from torch.optim import Optimizer
 
 class MCSAG(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, rho=0, tau=1, dynamic_step=False):
+    def __init__(self, params, lr, num_nodes=10, rho=0, tau=1, dynamic_step=False, weight_decay=0):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= rho:
@@ -31,6 +31,9 @@ class MCSAG(Optimizer):
                     continue
                 grad = p.grad.data
                 state = self.state[p]
+
+                if group['weight_decay'] != 0:
+                    grad = grad.add(p.data, alpha=group['weight_decay'])
 
                 if p not in self.grad_dict:
                     self.grad_dict[p] = {}
@@ -85,6 +88,9 @@ class MCSAG(Optimizer):
                 if p.grad is None:
                     continue
                 grad = p.grad.data
+
+                if group['weight_decay'] != 0:
+                    grad = grad.add(p.data, alpha=group['weight_decay'])
 
                 if p not in self.grad_dict:
                     self.grad_dict[p] = {}

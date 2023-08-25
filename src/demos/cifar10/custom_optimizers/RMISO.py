@@ -4,7 +4,7 @@ from torch.optim import Optimizer
 
 class RMISO(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1, delta=1e-5):
+    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1, delta=1e-5, weight_decay=0):
         # lr is 1/L where L is lipshitz constant. Store it this way so that the learning rate scheduler can be used
         if not 0.0 <= rho:
             raise ValueError("Invalid regularization parameter: {}".format(rho))
@@ -14,7 +14,7 @@ class RMISO(Optimizer):
             raise ValueError("Invalid multiplier: {}".format(delta))
         if not dynamic_step:
             delta = 1
-        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta)
+        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta, weight_decay=weight_decay)
         super(RMISO, self).__init__(params, defaults)
         self.num_nodes = num_nodes
         self.curr_node = 0
@@ -37,6 +37,9 @@ class RMISO(Optimizer):
                     continue
                 grad = p.grad.data
                 state = self.state[p]
+
+                if group['weight_decay'] != 0:
+                    grad = grad.add(p.data, alpha=group['weight_decay'])
 
                 # initialize lagged dict to store the parameter
                 # and gradient at the time of the last visit to each node by
@@ -109,6 +112,9 @@ class RMISO(Optimizer):
                 if p.grad is None:
                     continue
                 grad = p.grad.data
+
+                if group['weight_decay'] != 0:
+                    grad = grad.add(p.data, alpha=group['weight_decay'])
 
                 if p not in self.grad_dict:
                     self.grad_dict[p] = {}
