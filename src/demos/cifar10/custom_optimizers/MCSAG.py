@@ -9,7 +9,7 @@ class MCSAG(Optimizer):
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= rho:
             raise ValueError("Invalid step parameter: {}".format(rho))
-        defaults = dict(lr=lr, rho=rho, tau=tau, dynamic_step=dynamic_step)
+        defaults = dict(lr=lr, rho=rho, tau=tau, dynamic_step=dynamic_step, weight_decay=weight_decay)
         super(MCSAG, self).__init__(params, defaults)
         self.num_nodes = num_nodes
         self.curr_node = 0
