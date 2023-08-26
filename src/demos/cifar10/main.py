@@ -72,7 +72,6 @@ def build_dataset(args):
     train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
     graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
                       radius=args.radius, algorithm=args.sampling_algorithm)
-    train_eval_loader = DataLoader(train_set, batch_size=100, shuffle=False, num_workers=2)
 
     if args.save_graph:
         directory = os.path.join(os.getcwd(), "saved_graphs")
@@ -85,7 +84,7 @@ def build_dataset(args):
     test_set = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
 
-    return graph, train_eval_loader, test_loader
+    return graph, test_loader
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
@@ -164,6 +163,9 @@ def create_optimizer(args, num_nodes, model_params):
 def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
+    train_loss = 0
+    total = 0
+    correct = 0
     n_iter = len(graph.nodes)
 
     for _ in tqdm(range(n_iter)):
@@ -179,6 +181,16 @@ def train(net, epoch, device, graph, optimizer, criterion):
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
+        train_loss += loss.item()
+        _, predicted = outputs.max(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+
+    accuracy = 100. * correct / total
+    print('acc {:.3f}'.format(accuracy))
+    print('loss {:.3f}'.format(train_loss))
+
+    return accuracy, train_loss
 
 
 def evaluate(net, device, data_loader, criterion, data_set="test"):
@@ -186,14 +198,13 @@ def evaluate(net, device, data_loader, criterion, data_set="test"):
     eval_loss = 0
     correct = 0
     total = 0
-    n = len(data_loader)
+
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(data_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
-            # divide by number of batches to get average loss
-            eval_loss += loss.item()/n
+            eval_loss += loss.item()
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
@@ -209,7 +220,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    graph, train_eval_loader, test_loader = build_dataset(args)
+    graph, test_loader = build_dataset(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
@@ -239,10 +250,9 @@ def main():
     test_losses = []
 
     for epoch in range(start_epoch + 1, 120):
-        train(net, epoch, device, graph, optimizer, criterion)
-        train_acc, train_loss = evaluate(net, device, train_eval_loader, criterion, data_set="train")
+        train_acc, train_loss =  train(net, epoch, device, graph, optimizer, criterion)
         test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set="test")
-        scheduler.step()
+        #scheduler.step()
 
         if args.save:
             # Save checkpoint.
