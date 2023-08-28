@@ -42,6 +42,7 @@ def get_parser():
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
     parser.add_argument('--delta', default=1e-5, type=float, help='rmiso dynamic reg multiplier')
+    parser.add_argument('--pr_floor', default=0, type=float, help='set floor of rmiso pr parameter')
     parser.add_argument('--tau', default=1, type=float, help='mcsag hitting time. set to 1 for o.g. sag')
     parser.add_argument('--dynamic_step', action='store_true',
                         help='rmiso and mcsag dynamic lr schedule')
@@ -144,7 +145,7 @@ def create_optimizer(args, num_nodes, model_params):
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho,
-                     delta=args.delta, weight_decay=args.weight_decay)
+                     delta=args.delta, pr_floor=args.pr_floor, weight_decay=args.weight_decay)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, tau=args.tau,
@@ -253,6 +254,9 @@ def main():
         train_acc, train_loss =  train(net, epoch, device, graph, optimizer, criterion)
         test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set="test")
         #scheduler.step()
+        if args.sampling_algorithm == "metropolis_hastings" and isinstance(optimizer, (RMISO, MCSAG)):
+            for group in optimizer.param_groups:
+                print("rho: {}".format(group['rho']))
 
         if args.save:
             # Save checkpoint.

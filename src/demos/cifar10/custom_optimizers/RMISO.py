@@ -4,7 +4,7 @@ from torch.optim import Optimizer
 
 class RMISO(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1, delta=1e-5, weight_decay=0):
+    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1, delta=1e-5, pr_floor=0, weight_decay=0):
         # lr is 1/L where L is lipshitz constant. Store it this way so that the learning rate scheduler can be used
         if not 0.0 <= rho:
             raise ValueError("Invalid regularization parameter: {}".format(rho))
@@ -14,7 +14,7 @@ class RMISO(Optimizer):
             raise ValueError("Invalid multiplier: {}".format(delta))
         if not dynamic_step:
             delta = 1
-        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta, weight_decay=weight_decay)
+        defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta, pr_floor=pr_floor, weight_decay=weight_decay)
         super(RMISO, self).__init__(params, defaults)
         self.num_nodes = num_nodes
         self.curr_node = 0
@@ -90,9 +90,11 @@ class RMISO(Optimizer):
                 avg_param = torch.mean(torch.stack(param_list), dim=0)
                 state['avg_param'] = avg_param
 
+                pr = max(group['pr_floor'], group['delta']*group['rho'])
+
                 L = 1/group['lr']
-                step_size = 1/(L + group['delta']*group['rho'])
-                alpha = group['delta']*group['rho']*step_size
+                step_size = 1/(L + pr)
+                alpha = pr*step_size
 
                 avg_param_reg = avg_param.clone()
 
