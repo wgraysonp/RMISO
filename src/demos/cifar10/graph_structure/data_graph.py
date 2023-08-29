@@ -1,5 +1,7 @@
 import networkx as nx
 from networkx.utils import pairwise
+import matplotlib.pyplot as plt
+import numpy as np
 import random
 import matplotlib.pyplot as plt
 if __name__ == "__main__":
@@ -11,8 +13,6 @@ from torch.utils.data import DataLoader, Subset
 
 
 class DataGraph(nx.Graph):
-
-    random.seed(4)
 
     def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random',
                  radius=0.3, algorithm='uniform'):
@@ -33,6 +33,7 @@ class DataGraph(nx.Graph):
         self.num_edges = num_edges
         self.radius = radius
         self.topo = topo
+        self.random_gen = random.Random(4)
 
         self._create_nodes()
         self._connect_graph()
@@ -54,7 +55,7 @@ class DataGraph(nx.Graph):
             batch_size = len(data_idx)
             data_subset = Subset(self.data_set, data_idx)
             loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
-            pos = tuple(random.random() for k in range(2))
+            pos = tuple(self.random_gen.random() for k in range(2))
             self.add_node(i, pos=pos, data=idxs[m * i:], loader=loader)
 
     def _connect_graph(self):
@@ -81,12 +82,12 @@ class DataGraph(nx.Graph):
 
         S, T = list(self.nodes), []
 
-        node_s = random.sample(S, 1).pop()
+        node_s = self.random_gen.sample(S, 1).pop()
         S.remove(node_s)
         T.append(node_s)
 
         while S:
-            node_s, node_t = random.sample(S, 1).pop(), random.sample(T, 1).pop()
+            node_s, node_t = self.random_gen.sample(S, 1).pop(), self.random_gen.sample(T, 1).pop()
             self.add_edge(node_s, node_t)
             S.remove(node_s)
             T.append(node_s)
@@ -94,7 +95,7 @@ class DataGraph(nx.Graph):
         assert nx.is_connected(self), "Graph is not connected"
 
         while self.number_of_edges() < self.num_edges:
-            node_1, node_2 = tuple(random.sample(list(self.nodes), 2))
+            node_1, node_2 = tuple(self.random_gen.sample(list(self.nodes), 2))
             if self.has_edge(node_1, node_2):
                 continue
             else:
@@ -111,12 +112,18 @@ class DataGraph(nx.Graph):
 
 def test():
     data_set = list(range(100))
-    G = DataGraph(data_set, num_nodes=100, num_edges=70, radius=0.3, topo="geometric", algorithm="metropolis_hastings")
+    G = DataGraph(data_set, num_nodes=100, num_edges=99, radius=0.3, topo="geometric", algorithm="metropolis_hastings")
     #pos = nx.spring_layout(G)
     pos = {node: G.nodes[node]['pos'] for node in G.nodes}
-    for _ in range(10):
-        print(G.sample())
-    nx.draw(G, pos, with_labels=True)
+    visited = np.zeros(len(G.nodes))
+    N = 1000
+    for _ in range(N):
+        visited[G.sample()] += 1
+        #print(G.sample())
+    visited = visited * (1/N)
+    print(np.min(visited))
+    plt.bar(list(range(len(G.nodes))), visited)
+    #nx.draw(G, pos, with_labels=True)
     plt.show()
 
 
