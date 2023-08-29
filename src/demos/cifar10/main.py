@@ -224,7 +224,7 @@ def main():
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
-                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma, pr_foor=args.pr_floor,
+                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma, pr_floor=args.pr_floor,
                               graph_size=args.graph_size, rho=args.rho, delta=args.delta,
                               graph_edges=args.graph_edges, sampling_alg=args.sampling_algorithm)
 
