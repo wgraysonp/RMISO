@@ -97,8 +97,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr{}-rho{:f}-delta{:f}-pr_f: {}'.format(lr, rho, delta, pr_floor),
-        'mcsag': 'lr{:f}-rho{:f}-delta{:f}-pr_f: {}'.format(lr, rho, delta, pr_floor),
+        'rmiso': 'lr{}-rho{:f}-delta{:f}-pr_f-{}'.format(lr, rho, delta, pr_floor),
+        'mcsag': 'lr{:f}-rho{:f}-delta{:f}-pr_f-{}'.format(lr, rho, delta, pr_floor),
     }[optimizer]
     return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
