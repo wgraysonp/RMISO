@@ -41,7 +41,7 @@ def get_parser():
                         help='convergence speed term of Adabound')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
-    parser.add_argument('--delta', default=1e-5, type=float, help='rmiso dynamic reg multiplier')
+    parser.add_argument('--delta', default=1, type=float, help='rmiso dynamic reg multiplier')
     parser.add_argument('--pr_floor', default=0, type=float, help='set floor of rmiso pr parameter')
     parser.add_argument('--tau', default=1, type=float, help='mcsag hitting time. set to 1 for o.g. sag')
     parser.add_argument('--dynamic_step', action='store_true',
@@ -100,7 +100,7 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'rmiso': 'lr{}-rho{:f}-delta{:f}-initial_lr{:f}-final_lr{:f}-end{}'.format(lr, rho, delta, initial_lr, final_lr, total_iters),
-        'mcsag': 'lr{:f}-rho{:f}'.format(lr, rho),
+        'mcsag': 'lr{:f}-rho{:f}-delta{:f}'.format(lr, rho, delta),
     }[optimizer]
     return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
@@ -148,8 +148,8 @@ def create_optimizer(args, num_nodes, model_params):
                      delta=args.delta, pr_floor=args.pr_floor, weight_decay=args.weight_decay)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, tau=args.tau,
-                     rho=args.rho, weight_decay=args.weight_decay)
+                     dynamic_step=args.dynamic_step, tau=args.tau, pr_floor=args.pr_floor,
+                     delta=args.delta, weight_decay=args.weight_decay)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma=args.gamma,
@@ -250,7 +250,7 @@ def main():
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch + 1, 120):
+    for epoch in range(start_epoch + 1, 200):
         train_acc, train_loss =  train(net, epoch, device, graph, optimizer, criterion)
         test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set="test")
         #scheduler.step()

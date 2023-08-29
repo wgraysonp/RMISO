@@ -4,12 +4,12 @@ from torch.optim import Optimizer
 
 class MCSAG(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, rho=0, tau=1, dynamic_step=False, weight_decay=0):
+    def __init__(self, params, lr, num_nodes=10, rho=0, tau=1, dynamic_step=False, weight_decay=0, delta=1, pr_floor=0):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= rho:
             raise ValueError("Invalid step parameter: {}".format(rho))
-        defaults = dict(lr=lr, rho=rho, tau=tau, dynamic_step=dynamic_step, weight_decay=weight_decay)
+        defaults = dict(lr=lr, rho=rho, tau=tau, delta=delta,  dynamic_step=dynamic_step, pr_floor=pr_floor, weight_decay=weight_decay)
         super(MCSAG, self).__init__(params, defaults)
         self.num_nodes = num_nodes
         self.curr_node = 0
@@ -72,7 +72,8 @@ class MCSAG(Optimizer):
                 state['avg_grad'] = avg_grad
 
                 L = 1/group['lr']
-                denom = L*(group['tau'] + group['rho'])
+                pr = max(group['pr_floor'],group['delta']*group['rho'])
+                denom = L*(group['tau'] + pr)
                 step_size = 1/denom
 
                 p.data.add_(-avg_grad, alpha=step_size)
