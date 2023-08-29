@@ -5,9 +5,9 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 if __name__ == "__main__":
-    from sampling_algorithms import Uniform, MetropolisHastings
+    from sampling_algorithms import Uniform, MetropolisHastings, RandomWalk
 else:
-    from .sampling_algorithms import Uniform, MetropolisHastings
+    from .sampling_algorithms import Uniform, MetropolisHastings, RandomWalk
 import torch
 from torch.utils.data import DataLoader, Subset
 
@@ -23,7 +23,7 @@ class DataGraph(nx.Graph):
                 raise ValueError("Number of edges must be at least {}".format(num_nodes - 1))
             if num_edges > num_nodes*(num_nodes-1)/2:
                 raise ValueError("Number of edges can be no larger than {}".format(num_nodes*(num_nodes-1)/2))
-        if algorithm not in ['uniform', 'metropolis_hastings']:
+        if algorithm not in ['uniform', 'metropolis_hastings', 'random_walk']:
             raise ValueError("Invalid sampling algorithm")
 
         super().__init__()
@@ -42,6 +42,8 @@ class DataGraph(nx.Graph):
             self.sampling_alg = Uniform(initial_state=initial_state, graph=self)
         elif algorithm == 'metropolis_hastings':
             self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self)
+        elif algorithm == 'random_walk':
+            self.sampling_alg = RandomWalk(initial_state=initial_state, graph=self)
 
     def _create_nodes(self):
         N = len(self.data_set)

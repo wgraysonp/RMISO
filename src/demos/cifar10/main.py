@@ -19,7 +19,7 @@ from regularization_scheduler import RegScheduler
 def get_parser():
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
-                        choices=['uniform', 'metropolis_hastings'])
+                        choices=['uniform', 'metropolis_hastings', 'random_walk'])
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
     parser.add_argument('--graph_edges', default=99, type=int, help='number of edges in the graph')
     parser.add_argument('--graph_topo', default='random', type=str, help='model',
@@ -89,9 +89,7 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentum=0.9, beta1=0.9, beta2=0.999, gamma=1e-3,
-                  rho=1, start_factor=1, total_iters=1, delta=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
-    initial_lr = start_factor*lr
-    final_lr = lr
+                  rho=1, pr_floor=0, delta=1, graph_size=10, graph_edges=10, sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -99,8 +97,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=0.1, final_lr=0.1, momentu
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr{}-rho{:f}-delta{:f}-initial_lr{:f}-final_lr{:f}-end{}'.format(lr, rho, delta, initial_lr, final_lr, total_iters),
-        'mcsag': 'lr{:f}-rho{:f}-delta{:f}'.format(lr, rho, delta),
+        'rmiso': 'lr{}-rho{:f}-delta{:f}-pr_f: {}'.format(lr, rho, delta, pr_floor),
+        'mcsag': 'lr{:f}-rho{:f}-delta{:f}-pr_f: {}'.format(lr, rho, delta, pr_floor),
     }[optimizer]
     return '{}-{}-{}-nodes{}-edges{}-{}'.format(model, optimizer, name, graph_size, graph_edges, sampling_alg)
 
@@ -226,8 +224,8 @@ def main():
 
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
-                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma, start_factor=args.start_factor,
-                              total_iters=args.total_sched_iters, graph_size=args.graph_size, rho=args.rho, delta=args.delta,
+                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma, pr_foor=args.pr_floor,
+                              graph_size=args.graph_size, rho=args.rho, delta=args.delta,
                               graph_edges=args.graph_edges, sampling_alg=args.sampling_algorithm)
 
     if args.resume:
@@ -254,7 +252,7 @@ def main():
         train_acc, train_loss =  train(net, epoch, device, graph, optimizer, criterion)
         test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set="test")
         #scheduler.step()
-        if args.sampling_algorithm == "metropolis_hastings" and isinstance(optimizer, (RMISO, MCSAG)):
+        if args.sampling_algorithm in ["metropolis_hastings", "random_walk"] and isinstance(optimizer, (RMISO, MCSAG)):
             for group in optimizer.param_groups:
                 print("rho: {}".format(group['rho']))
 
