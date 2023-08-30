@@ -12,7 +12,8 @@ from torch.utils.data import DataLoader, Subset
 
 class DataGraph(nx.Graph):
 
-    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random', radius=0.3, algorithm='uniform'):
+    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random', radius=0.3,
+                 algorithm='uniform', sep_classes=False):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
         if topo == "random":
@@ -24,7 +25,10 @@ class DataGraph(nx.Graph):
             raise ValueError("Invalid sampling algorithm")
 
         super().__init__()
+        if sep_classes:
+            assert num_nodes % len(data_set.classes) == 0, "number of nodes should be divisible by number of classes :{}".format(len(data_set.classes))
 
+        self.sep_classes = sep_classes
         self.data_set = data_set
         self.num_nodes = num_nodes
         self.num_edges = num_edges
@@ -43,19 +47,38 @@ class DataGraph(nx.Graph):
             self.sampling_alg = RandomWalk(initial_state=initial_state, graph=self)
 
     def _create_nodes(self):
-        N = len(self.data_set)
-        idxs = list(range(N))
-        m = int(N/self.num_nodes)
-        for i in range(self.num_nodes):
-            if i == self.num_nodes-1:
-                data_idx = idxs[m*i:]
-            else:
-                data_idx = idxs[m*i:m*(i+1)]
-            batch_size = len(data_idx)
-            data_subset = Subset(self.data_set, data_idx)
-            loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
-            pos = tuple(self.random_gen.random() for k in range(2))
-            self.add_node(i, data=data_idx, loader=loader)
+        if not self.sep_classes:
+            N = len(self.data_set)
+            idxs = list(range(N))
+            m = int(N/self.num_nodes)
+            for i in range(self.num_nodes):
+                if i == self.num_nodes-1:
+                    data_idx = idxs[m*i:]
+                else:
+                    data_idx = idxs[m*i:m*(i+1)]
+                batch_size = len(data_idx)
+                data_subset = Subset(self.data_set, data_idx)
+                loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
+                pos = tuple(self.random_gen.random() for k in range(2))
+                self.add_node(i, data=data_idx, pos=pos, loader=loader)
+        else:
+            nodes_per_label = int(self.num_nodes/len(self.data_set.classes))
+            node_count = 0
+            for label in self.data_set.classes:
+                idxs = (self.data_set.targets == label).nonzero()[:, 0].tolist()
+                N = len(idxs)
+                m = int(N/nodes_per_label)
+                for i in range(nodes_per_label):
+                    if i == nodes_per_label-1:
+                        data_idx = idxs[m*i:]
+                    else:
+                        data_idx = idxs[m*i:m*(i+1)]
+                    batch_size = len(data_idx)
+                    data_subset = Subset(self.data_set, data_idx)
+                    loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
+                    pos = tuple(self.random_gen.random() for k in range(2))
+                    self.add_node(node_count, data=data_idx, pos=pos, loader=loader)
+                    node_count += 1
 
     def _connect_graph(self):
         if self.topo == "random":
@@ -107,7 +130,7 @@ class DataGraph(nx.Graph):
 
 
 def test():
-    data_set = list(range(500))
+    data_set = list(range(100))
     G = DataGraph(data_set, num_nodes=7, num_edges=11, topo='cycle')
     pos = nx.spring_layout(G)
     nx.draw(G, pos)
