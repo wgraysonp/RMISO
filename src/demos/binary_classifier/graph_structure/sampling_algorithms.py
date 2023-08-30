@@ -39,8 +39,19 @@ class MetropolisHastings:
         return self.state
 
 
+class RandomWalk:
+    def __init__(self, initial_state=0, graph=None):
+        if graph is None:
+            raise ValueError("Must provide graph object")
+        self.graph = graph
+        self.state = initial_state
+
+    def step(self):
+        neighbors = [n for n in self.graph.neighbors(self.state)]
+        self.state = random.choices(neighbors).pop()
+
+
 class Uniform:
-    random.seed(0)
     def __init__(self, initial_state=0, graph=None):
         if graph is None:
             raise ValueError("Must provide graph object")

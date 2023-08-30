@@ -38,7 +38,7 @@ def get_parser():
                         help='convergence speed term of Adabound')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
     parser.add_argument('--rho', default=1, type=float, help='rmiso proximal regularization parameter')
-    parser.add_argument('--delta', default=1e-5, type=float, help='rmiso dynamic prox reg multiplier')
+    parser.add_argument('--delta', default=1, type=float, help='rmiso dynamic prox reg multiplier')
     parser.add_argument('--tau', default=1, type=float, help='mcsag hitting time. set to 1 for o.g. sag')
     parser.add_argument('--dynamic_step', action='store_true',
                         help='rmiso and mcsag dynamic lr schedule')
@@ -49,6 +49,8 @@ def get_parser():
                         help='weight decay for optimizers')
     parser.add_argument('--save_graph', action='store_true', help='save the data graph')
     parser.add_argument('--init_optimizer', action='store_true', help='initialize gradients for SAG or RMISO')
+    parser.add_argument('--epoch_length', default=100, type=int, help='number of iterations per epoch')
+    parser.add_argument('--epochs', default=20, type=int, help='number of epochs to run')
     parser.add_argument('--save', action='store_true', help='save training curve')
     return parser
 
@@ -59,8 +61,8 @@ def build_dataset(args):
     zero_one = True if args.model == "one_layer" else False
 
     train_set = CovType(train=True, zero_one=zero_one)
-    graph = DataGraph(train_set, num_nodes=args.graph_size, initial_state=0,  num_edges=args.graph_edges, topo=args.graph_topo,
-                      algorithm=args.sampling_algorithm)
+    graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
+                      radius=args.radius, algorithm=args.sampling_algorithm)
 
     if args.save_graph:
         directory = os.path.join(os.getcwd(), "saved_graphs")
@@ -77,9 +79,7 @@ def build_dataset(args):
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
-                  gamma=1e-3, rho=1, start_factor=1, total_iters=1,  delta=1, graph_size=10, graph_edges=10, graph_topo='random', sampling_alg='uniform'):
-    initial_lr = start_factor*lr
-    final_lr = lr
+                  gamma=1e-3, rho=1, delta=1, graph_size=10, graph_edges=10, graph_topo='random', sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
         'adagrad': 'lr{}'.format(lr),
@@ -87,8 +87,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr{}-rho{:f}-delta{:f}-initial_lr{:f}-final_lr{:f}-end{}'.format(lr, rho, delta, initial_lr, final_lr, total_iters),
-        'mcsag': 'lr{:f}-rho{:f}'.format(lr, rho),
+        'rmiso': 'lr{}-rho{:f}-delta{:f}'.format(lr, rho, delta),
+        'mcsag': 'lr{:f}-rho{:f}-delta{:f}'.format(lr, rho, delta),
     }[optimizer]
 
     return '{}-{}-{}-nodes{}-edges{}-{}-{}'.format(model, optimizer, name, graph_size, graph_edges, graph_topo, sampling_alg)
@@ -134,10 +134,12 @@ def create_optimizer(args, num_nodes, model_params):
                           weight_decay=args.weight_decay, amsgrad=True)
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, rho=args.rho, delta=args.delta)
+                     dynamic_step=args.dynamic_step, rho=args.rho, delta=args.delta,
+                     weight_decay=args.weight_decay)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
-                     dynamic_step=args.dynamic_step, tau=args.tau, rho=args.rho)
+                     dynamic_step=args.dynamic_step, tau=args.tau, delta=args.delta,
+                     rho=args.rho, weight_decay=args.weight_decay)
     elif args.optim == 'adabound':
         return AdaBound(model_params, args.lr, betas=(args.beta1, args.beta2),
                         final_lr=args.final_lr, gamma=args.gamma,
@@ -166,13 +168,12 @@ def initialize_optimizer(net, device, graph, optimizer, criterion):
         optimizer.init_params()
 
 
-def train(net, epoch, device, graph, optimizer, criterion):
+def train(net, epoch, n_iter, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
-    n_iter = len(graph.nodes)
 
     for _ in tqdm(range(n_iter)):
         node_id = graph.sample()
@@ -232,7 +233,7 @@ def main():
     device = 'cpu'
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
-                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,start_factor=args.start_factor, total_iters=args.total_sched_iters,
+                              beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
                               graph_size=num_nodes, rho=args.rho, delta=args.delta, graph_edges=num_edges,
                               sampling_alg=args.sampling_algorithm, graph_topo=args.graph_topo)
 
@@ -257,9 +258,11 @@ def main():
     test_accuracies = []
     train_losses = []
     test_losses = []
+    iter_count = []
 
-    for epoch in range(start_epoch + 1, 100):
-        train_acc, train_loss = train(net, epoch, device, graph_loader, optimizer, criterion)
+    n_iter = args.epoch_length
+    for epoch in range(start_epoch + 1, args.epochs):
+        train_acc, train_loss = train(net, epoch, n_iter, device, graph_loader, optimizer, criterion)
         test_acc, test_loss = test(net, device, test_loader, criterion)
         scheduler.step()
 
@@ -282,10 +285,11 @@ def main():
             train_losses.append(train_loss)
             test_losses.append(test_loss)
             test_accuracies.append(test_acc)
+            iter_count.append((epoch + 1)*n_iter)
             if not os.path.isdir('curve'):
                 os.mkdir('curve')
             torch.save({'train_acc': train_accuracies, 'train_loss': train_losses, 'test_acc': test_accuracies,
-                        'test_loss': test_losses}, os.path.join('curve', ckpt_name))
+                        'test_loss': test_losses, 'iter_count': iter_count}, os.path.join('curve', ckpt_name))
 
 
 if __name__ == "__main__":
