@@ -52,6 +52,7 @@ def get_parser():
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
     parser.add_argument('--save_graph', action='store_true', help='save the data graph')
+    parser.add_argument('--epochs', default=120, type=int, help='number of epochs to run')
     parser.add_argument('--save', action='store_true', help='save training curve')
     return parser
 
@@ -248,7 +249,7 @@ def main():
     train_losses = []
     test_losses = []
 
-    for epoch in range(start_epoch + 1, 200):
+    for epoch in range(start_epoch + 1, args.epochs):
         train_acc, train_loss =  train(net, epoch, device, graph, optimizer, criterion)
         test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set="test")
         #scheduler.step()

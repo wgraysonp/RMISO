@@ -53,7 +53,7 @@ def build_dataset(args):
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
 
-    graph = DataGraph(train_subset, num_nodes=10, num_edges=190, algorithm=args.sampling_algorithm, topo='cycle', radius=0.3)
+    graph = DataGraph(train_subset, num_nodes=100, num_edges=190, algorithm=args.sampling_algorithm, topo='geometric', radius=0.3)
     return graph
 
 
