@@ -72,9 +72,10 @@ def build_dataset(args):
         pickle.dump(graph, open(path, 'wb'))
 
     test_set = CovType(train=False, zero_one=zero_one)
-    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
+    test_loader = DataLoader(test_set, batch_size=100, shuffle=False, num_workers=0)
+    train_eval_loader = DataLoader(train_set, batch_size=100, shuffle=False, num_workers=0)
 
-    return graph, test_loader
+    return graph, train_eval_loader, test_loader
 
 
 def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
@@ -189,21 +190,21 @@ def train(net, epoch, n_iter, device, graph, optimizer, criterion):
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
-        train_loss += loss.item()/n_iter
-        predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
+        #train_loss += loss.item()/n_iter
+        #predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
+        #total += targets.size(0)
+        #correct += predicted.eq(targets).sum().item()
   
-    accuracy = 100. * correct / total
-    print('loss: {:3f}'.format(train_loss))
-    print('train acc %.3f' % accuracy)
+    #accuracy = 100. * correct / total
+    #print('loss: {:3f}'.format(train_loss))
+    #print('train acc %.3f' % accuracy)
 
-    return accuracy, train_loss
+    #return accuracy, train_loss
 
 
-def test(net, device, data_loader, criterion):
+def evaluate(net, device, data_loader, criterion, data_set='train'):
     net.eval()
-    test_loss = 0
+    eval_loss = 0
     correct = 0
     total = 0
     n_iter = len(data_loader)
@@ -212,22 +213,25 @@ def test(net, device, data_loader, criterion):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
-            test_loss += loss.item()/n_iter
+            eval_loss += loss.item()/n_iter
             predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
     accuracy = 100. * correct / total
-    print('test acc %.3f' % accuracy)
+    print('{} acc {:.3f}'.format(data_set, accuracy))
+    print('{} loss {:.3f}'.format(data_set, eval_loss))
+    #print('test acc %.3f' % accuracy)
+    #print('test loss: {}'.format(test_loss))
 
-    return accuracy, test_loss
+    return accuracy, eval_loss
 
 
 def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    graph_loader, test_loader = build_dataset(args)
+    graph_loader, train_eval_loader, test_loader = build_dataset(args)
     num_nodes = len(graph_loader.nodes)
     num_edges = len(graph_loader.edges)
    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -263,8 +267,9 @@ def main():
 
     n_iter = args.epoch_length
     for epoch in range(start_epoch + 1, args.epochs):
-        train_acc, train_loss = train(net, epoch, n_iter, device, graph_loader, optimizer, criterion)
-        test_acc, test_loss = test(net, device, test_loader, criterion)
+        train(net, epoch, n_iter, device, graph_loader, optimizer, criterion)
+        train_acc, train_loss = evaluate(net, device, train_eval_loader, criterion, data_set='train')
+        test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set='test')
 
         if args.save:
          # Save checkpoint
