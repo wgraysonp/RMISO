@@ -36,8 +36,8 @@ def get_parser():
 def build_dataset(args):
     print('==> Preparing data..')
     transform_trane = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
+        #transforms.RandomCrop(32, padding=4),
+        #transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
@@ -49,11 +49,11 @@ def build_dataset(args):
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_trane)
 
-    data_subset = list(range(5000))
+    data_subset = list(range(50))
 
     train_subset = torch.utils.data.Subset(trainset, data_subset)
 
-    graph = DataGraph(train_subset, num_nodes=100, num_edges=190, algorithm=args.sampling_algorithm, topo='geometric', radius=0.3)
+    graph = DataGraph(train_subset, num_nodes=50, num_edges=190, algorithm=args.sampling_algorithm, topo='geometric', radius=0.3)
     return graph
 
 

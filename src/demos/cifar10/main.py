@@ -30,6 +30,7 @@ def get_parser():
                         choices=['resnet', 'densenet'])
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
                         choices=['rmiso', 'sgd', 'adagrad', 'adam', 'amsgrad', 'adabound', 'amsbound', 'mcsag'])
+    parser.add_argument('--init_optimizer', action='store_true', help='initialize rmiso or sag gradients')
     parser.add_argument('--lr', default=1, type=float, help='learning rate')
     parser.add_argument('--start_factor', default=1, type=float, help='start factor for linear LR scheduler')
     parser.add_argument('--total_sched_iters', default=1, type=float, help='last epoch in linear LR scheduler')
@@ -60,8 +61,8 @@ def get_parser():
 def build_dataset(args):
     print('==> Preparing data..')
     transform_trane = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
+        #transforms.RandomCrop(32, padding=4),
+        #transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
@@ -159,6 +160,22 @@ def create_optimizer(args, num_nodes, model_params):
                         final_lr=args.final_lr, gamma=args.gamma,
                         weight_decay=args.weight_decay, amsbound=True)
 
+def initialize_optimizer(net, device, graph, optimizer, criterion):
+    assert isinstance(optimizer, (RMISO, MCSAG))
+    print("==> initializing gradients")
+    n_iter = len(graph.nodes)
+    for i in tqdm(range(n_iter)):
+        loader = graph.nodes[i]['loader']
+        assert len(loader) == 1
+        (inputs, targets) = next(iter(loader))
+        inputs, targets = inputs.to(device), targets.to(device)
+        optimizer.zero_grad()
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+        loss.backward()
+        optimizer.set_current_node(i)
+        optimizer.init_params()
+
 
 def train(net, epoch, device, graph, optimizer, criterion):
     print('\nEpoch: %d' % epoch)
@@ -243,6 +260,9 @@ def main():
     optimizer = create_optimizer(args, args.graph_size, net.parameters())
     scheduler = optim.lr_scheduler.LinearLR(optimizer, start_factor=args.start_factor,
                                             total_iters=args.total_sched_iters, verbose=True)
+
+    if args.init_optimizer and isinstance(optimizer, (RMISO, MCSAG)):
+        initialize_optimizer(net, device, graph, optimizer, criterion)
 
     train_accuracies = []
     test_accuracies = []
