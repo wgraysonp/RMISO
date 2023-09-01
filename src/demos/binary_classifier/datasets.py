@@ -5,6 +5,8 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 from graph_structure.data_graph import DataGraph
+import networkx as nx
+import matplotlib.pyplot as plt
 
 
 class CovType(Dataset):
@@ -41,15 +43,19 @@ class CovType(Dataset):
 
 
 def test():
-    data = CovType(train=True)
-    G = DataGraph(data, num_nodes=100, num_edges=11, topo='cycle', sep_classes=True)
-    print(G.nodes[0]['data'])
+    data = CovType(train=True, zero_one=False)
+    G = DataGraph(data, num_nodes=50, num_edges=11, topo='geometric', sep_classes=True)
+    print(G.nodes[25]['data'])
+
     l = 0
     for node in G.nodes:
         l += len(G.nodes[node]['data'])
     print(l)
-    #for idx in G.nodes[50]['data']:
-        #print(data.targets[idx])
+    pos = {node: G.nodes[node]['pos'] for node in G.nodes}
+    nx.draw(G, pos, with_labels=True)
+    plt.show()
+    for idx in G.nodes[24]['data']:
+        print(data.targets[idx])
 
 
 if __name__ == "__main__":

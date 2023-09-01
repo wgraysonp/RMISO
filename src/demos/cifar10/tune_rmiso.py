@@ -7,7 +7,7 @@ from tqdm import tqdm
 import argparse
 
 from models import *
-from custom_optimizers.RMISO import RMISO
+from custom_optimizers.RMISO import RMISO, ARMISO
 from custom_optimizers.MCSAG import MCSAG
 from graph_structure.data_graph import DataGraph
 from regularization_scheduler import RegScheduler
@@ -80,6 +80,9 @@ def create_optimizer(args, num_nodes, model_params):
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho, delta=args.delta)
+    elif args.optim == 'armiso':
+        return ARMISO(model_params, args.lr, num_nodes=num_nodes, rho=args.rho,
+                      dynamic_step=args.dynamic_step, alpha=args.delta)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho)
