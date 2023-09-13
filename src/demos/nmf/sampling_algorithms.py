@@ -42,7 +42,7 @@ class MetropolisHastings:
 
 class RandomWalk:
     random.seed(9)
-    
+
     def __init__(self, initial_state=0, graph=None):
         if graph is None:
             raise ValueError("Must provide graph object")

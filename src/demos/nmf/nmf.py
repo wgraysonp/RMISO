@@ -179,11 +179,12 @@ class PSGD(NMFOptim):
 
 class MU(NMFOptim):
 
-    def __init__(self, W, rho=0, delta=0, **kwargs):
+    def __init__(self, W, rho=0, delta=0, eps=1e-5, **kwargs):
 
         super().__init__(W, **kwargs)
         self.rho = rho
         self.delta = delta
+        self.eps = eps
 
     def step(self):
         H0 = self.H.copy()
@@ -194,18 +195,18 @@ class MU(NMFOptim):
         H1 = np.maximum(self.H, self.delta*np.ones_like(self.H))
 
         H0 = H1 * (np.dot(self.W.T, self.X) + self.rho*H1)
-        H0 = H0 / ((np.dot(self.W.T, self.W) + self.rho*I) @ H1)
+        H0 = H0 / ((np.dot(self.W.T, self.W) + self.rho*I) @ H1 + self.eps*np.ones_like(H0))
 
-        if np.isnan(H0).any():
-            H0 = self.H
+        #if np.isnan(H0).any():
+            #H0 = self.H
 
         W1 = np.maximum(self.W, self.delta*np.ones_like(self.W))
 
         Wt = W1.T * (np.dot(self.H, self.X.T) + self.rho*W1.T)
-        Wt = Wt/((np.dot(self.H, self.H.T) + self.rho*I) @ W1.T)
+        Wt = Wt/((np.dot(self.H, self.H.T) + self.rho*I) @ W1.T + self.eps*np.ones_like(Wt))
 
-        if np.isnan(Wt).any():
-            Wt = self.W.T
+        #if np.isnan(Wt).any():
+            #Wt = self.W.T
 
         self.H = H0
         self.W = Wt.T

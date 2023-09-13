@@ -34,6 +34,7 @@ def get_parser():
     parser.add_argument('--lr', default=1e-3, type=float, help='adagrad and psgd learning rate')
     parser.add_argument('--eta', default=0.0, type=float, help='adagrad and psgd step decay parameter')
     parser.add_argument('--rho', default=0, type=float, help='rmiso prox reg parameter')
+    parser.add_argument('--eps', default=1e-10, type=float, help='positivity enforcing constant for denominators of mu and adagrad')
     parser.add_argument('--dynamic_reg', default=False, type=bool, help='use dynamic regularization for rmiso')
     parser.add_argument('--beta', default=1, type=float, help='scaling factor for rmiso dynamic prox reg')
     parser.add_argument('--iterations', default=100, type=int, help='number of iterations to run')
@@ -103,10 +104,10 @@ def create_optimizer(optim, W, args, X=None, H=None):
     elif optim == "minibatch_cd":
         return MiniBatchCD(W, n_nodes=args.graph_size, n_components=args.n_components, alpha=args.alpha)
     elif optim == "mu":
-        return MU(W, rho=0, delta=0, n_components=args.n_components, alpha=args.alpha, X=X, H=H)
+        return MU(W, rho=0, delta=0, n_components=args.n_components, alpha=args.alpha, eps=args.eps, X=X, H=H)
     elif optim == "psgd":
         return PSGD(W, X=X, H=H, lr=args.lr, eta=args.eta, n_nodes=args.graph_size,
-                    n_components=args.n_components, alpha=args.alpha)
+                    n_components=args.n_components, alpha=args.alpha, eps=args.eps)
     elif optim == "adagrad":
         return AdaGrad(W, lr=args.lr, n_components=args.n_components, alpha=args.alpha)
     else:
@@ -127,7 +128,7 @@ def get_save_name(args):
 
 def loss(X, W, H, alpha=0):
     A = X - np.dot(W, H)
-    return 0.5*LA.norm(A, 'fro') + alpha*LA.norm(H, 1)
+    return 0.5*LA.norm(A, ord='fro')**2 + alpha*LA.norm(H, 1)
 
 
 def evaluate(loss_fn, graph, W, alpha=0):
@@ -192,6 +193,8 @@ def train_full_batch(optimizer, loss_fn, n_iter=10, n_samples=1, initial_time=0.
         optimizer.step()
         end = time.time()
         loss_val = (1/n_samples)*loss_fn(optimizer.X, optimizer.W, optimizer.H, alpha=alpha)
+        if i % 100 == 0:
+            print("loss: {:3f}".format(loss_val))
         losses.append(loss_val)
         elapsed_time.append(end - start + initial_time)
         initial_time = end - start + initial_time
@@ -207,6 +210,7 @@ def main():
     m, n, d = dims[0], dims[1], args.n_components
 
     if args.full_batch:
+        print("here")
         assert args.optim in FULL_BATCH_ALGS
         n *= args.n_examples
         X = build_full_batch(data)
