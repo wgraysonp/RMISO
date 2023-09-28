@@ -15,7 +15,7 @@ import pickle
 GRAPH_TOPOS = ['geometric']
 DATASETS = ['mnist']
 FULL_BATCH_ALGS = ['mu', 'psgd']
-MINI_BATCH_ALGS = ['rmiso', 'minibatch_cd', 'psgd', 'adagrad']
+MINI_BATCH_ALGS = ['rmiso', 'psgd', 'adagrad', 'onmf', 'walkman']
 
 
 def get_parser():
@@ -27,18 +27,23 @@ def get_parser():
     parser.add_argument('--radius', default=0.3, type=float, help='connection radius for geometric graph')
     parser.add_argument('--dataset', default='mnist', type=str, help='data set to train dictionary on')
     parser.add_argument('--alpha', default=0, type=float, help='L1 regularization parameter for sparse coding')
-    parser.add_argument('--n_components', default=15, type=int, help='number of dictionary components (columns in the matrix)')
+    parser.add_argument('--n_components', default=15, type=int,
+                        help='number of dictionary components (columns in the matrix)')
     parser.add_argument('--n_examples', default=100, type=int, help='number of training data pointsw')
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
-                        choices=['rmiso', 'minibatch_cd', 'mu', 'psgd', 'adagrad'])
+                        choices=['rmiso', 'minibatch_cd', 'mu', 'psgd', 'adagrad', 'onmf', 'walkman'])
     parser.add_argument('--lr', default=1e-3, type=float, help='adagrad and psgd learning rate')
     parser.add_argument('--eta', default=0.0, type=float, help='adagrad and psgd step decay parameter')
     parser.add_argument('--rho', default=0, type=float, help='rmiso prox reg parameter')
-    parser.add_argument('--eps', default=1e-10, type=float, help='positivity enforcing constant for denominators of mu and adagrad')
+    parser.add_argument('--dr', default=False, type=bool, help='rmiso with diminishing radius')
+    parser.add_argument('--eps', default=1e-10, type=float,
+                        help='positivity enforcing constant for denominators of mu and adagrad')
     parser.add_argument('--dynamic_reg', default=False, type=bool, help='use dynamic regularization for rmiso')
     parser.add_argument('--beta', default=1, type=float, help='scaling factor for rmiso dynamic prox reg')
+    parser.add_argument('--beta_wm', default=100, type=float, help='walkman hyperparameter')
     parser.add_argument('--iterations', default=100, type=int, help='number of iterations to run')
     parser.add_argument('--full_batch', action='store_true', help="turn on full-batch flag for full-batch algs like MU")
+    parser.add_argument('--sep_labels', action='store_true', help="each node only stores data with same label")
 
     return parser
 
@@ -47,15 +52,16 @@ def build_dataset(dataset, num_examples=10):
     assert dataset in DATASETS, "invalid dataset"
     random_gen = random.Random(4)
     if dataset == "mnist":
-        X = fetch_openml("mnist_784", version=1, return_X_y=True, as_frame=False, parser="auto")[0]
+        X, y = fetch_openml("mnist_784", version=1, return_X_y=True, as_frame=False, parser="auto")
         X = X/255.0
         n = len(X)
         X = X.reshape(n, 28, 28)
         idx = random_gen.sample(range(n), num_examples)
-        dataset = X[idx]
+        data = X[idx]
+        labels = y[idx]
         dims = (28, 28)
 
-    return dataset, dims
+    return data, labels, dims
 
 
 def build_full_batch(data):
@@ -66,28 +72,58 @@ def build_full_batch(data):
     return X
 
 
-# !!! only run this when there is one data matrix per node for now
-def build_graph(data, num_nodes=10, radius=0.3, topo="geometric", n_components=15):
+def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_components=15, sep_labels=False):
     assert topo in GRAPH_TOPOS, "invalid graph topology"
     assert len(data) >= num_nodes, "not enough nodes"
 
-    random_gen = random.Random(4)
-    graph = nx.Graph()
-    N = len(data)
-    idxs = list(range(N))
-    m = int(N/num_nodes)
+    if sep_labels:
+        random_gen = random.Random(4)
+        graph = nx.Graph()
+        N = len(data)
+        m = int(N / num_nodes)
+        label_set = set(labels)
+        num_labels = len(label_set)
+        j = 0
+        for num in label_set:
+            idxs = np.argwhere(labels == num).reshape(1, -1)[0].tolist()
+            i = 0
+            while m*i < len(idxs):
+                data_idx = idxs[m*i:m*(i+1)]
+                pos = tuple(random_gen.random() for k in range(2))
+                data_matrix = np.hstack(tuple(data[data_idx]))
+                num_examples = len(data_idx)
+                code_dims = (n_components, data_matrix.shape[1])
+                code_mat = np.random.rand(*code_dims)
+                #code_mat = np.zeros(*code_dims)
+                # ensure the code matrix at each node is the same shape by adding zeros
+                if m*(i+1) > len(idxs):
+                    num_zero_mats = m*(i+1) - len(idxs)
+                    data_zeros = np.zeros((28, 28*num_zero_mats))
+                    code_zeros = np.zeros((n_components, 28*num_zero_mats))
+                    data_matrix = np.hstack((data_matrix, data_zeros))
+                    code_mat = np.hstack((code_mat, code_zeros))
+                graph.add_node(j, pos=pos, num_examples=num_examples, data_matrix=data_matrix, code_matrix=code_mat)
+                i += 1
+                j += 1
 
-    for i in range(num_nodes):
-        if i == num_nodes - 1:
-            data_idx = idxs[m*i:]
-        else:
-            data_idx = idxs[m*i:m*(i+1)]
-        pos = tuple(random_gen.random() for k in range(2))
-        data_matrix = np.hstack(tuple(data[data_idx]))
-        num_examples = len(data_idx)
-        code_dims = (n_components, data_matrix.shape[1])
-        code_mat = np.random.rand(*code_dims)
-        graph.add_node(i, pos=pos, num_examples=num_examples, data_matrix=data_matrix, code_matrix=code_mat)
+    else:
+        random_gen = random.Random(4)
+        graph = nx.Graph()
+        N = len(data)
+        idxs = list(range(N))
+        m = int(N/num_nodes)
+
+        for i in range(num_nodes):
+            if i == num_nodes - 1:
+                data_idx = idxs[m*i:]
+            else:
+                data_idx = idxs[m*i:m*(i+1)]
+            pos = tuple(random_gen.random() for k in range(2))
+            data_matrix = np.hstack(tuple(data[data_idx]))
+            num_examples = len(data_idx)
+            code_dims = (n_components, data_matrix.shape[1])
+            code_mat = np.random.rand(*code_dims)
+            graph.add_node(i, pos=pos, num_examples=num_examples, data_matrix=data_matrix, code_matrix=code_mat)
 
     if topo == "geometric":
         graph.add_edges_from(nx.geometric_edges(graph, radius))
@@ -97,33 +133,41 @@ def build_graph(data, num_nodes=10, radius=0.3, topo="geometric", n_components=1
     return graph
 
 
-def create_optimizer(optim, W, args, X=None, H=None):
+def create_optimizer(optim, W, args, nodes, X=None, H=None):
     if optim == "rmiso":
-        return Rmiso(W, n_nodes=args.graph_size, n_components=args.n_components, alpha=args.alpha,
-                     rho=args.rho, beta=args.beta, dynamic_reg=args.dynamic_reg)
-    elif optim == "minibatch_cd":
-        return MiniBatchCD(W, n_nodes=args.graph_size, n_components=args.n_components, alpha=args.alpha)
+        return Rmiso(W, n_nodes=nodes, n_components=args.n_components, alpha=args.alpha,
+                     rho=args.rho, beta=args.beta, dynamic_reg=args.dynamic_reg, dr=args.dr)
     elif optim == "mu":
         return MU(W, rho=0, delta=0, n_components=args.n_components, alpha=args.alpha, eps=args.eps, X=X, H=H)
     elif optim == "psgd":
         return PSGD(W, X=X, H=H, lr=args.lr, eta=args.eta, n_nodes=args.graph_size,
-                    n_components=args.n_components, alpha=args.alpha, eps=args.eps)
+                    n_components=args.n_components, alpha=args.alpha)
     elif optim == "adagrad":
-        return AdaGrad(W, lr=args.lr, n_components=args.n_components, alpha=args.alpha)
+        return AdaGrad(W, lr=args.lr, n_components=args.n_components, alpha=args.alpha, eps=args.eps)
+    elif optim == 'onmf':
+        return ONMF(W, n_components=args.n_components, alpha=args.alpha)
+    elif optim == 'walkman':
+        return Walkman(W, beta=args.beta_wm, n_components=args.n_components, alpha=args.alpha, n_nodes=nodes)
     else:
         raise ValueError("Invalid optimizer: {}".format(optim))
 
 
-def get_save_name(args):
+def get_save_name(args, nodes):
     name = {
-        "rmiso": '{}-rho{:f}-beta{:f}-dynamic{}'.format(args.optim, args.rho, args.beta, args.dynamic_reg),
+        "rmiso": '{}-rho{:f}-beta{:f}-dynamic{}-dr{}'.format(args.optim, args.rho, args.beta, args.dynamic_reg, args.dr),
         'minibatch_cd': '{}'.format(args.optim),
         'mu': '{}'.format(args.optim),
         'psgd': '{}'.format(args.optim) if not args.full_batch else 'pgd',
-        'adagrad': '{}-lr{}'.format(args.optim, args.lr)
+        'adagrad': '{}-lr{}'.format(args.optim, args.lr),
+        'onmf': '{}'.format(args.optim)
     }[args.optim]
-    return '{}-{}-alpha{}-components{}-nodes{}-{}'.format(args.dataset, name, args.alpha, args.n_components,
-                                                     args.graph_size, args.sampling_algorithm)
+    if args.sep_labels:
+        save_name = '{}-{}-alpha{}-sep_classes-components{}-nodes{}-{}'.format(args.dataset, name, args.alpha, args.n_components,
+                                                          nodes, args.sampling_algorithm)
+    else:
+        save_name = '{}-{}-alpha{}-components{}-nodes{}-{}'.format(args.dataset, name, args.alpha, args.n_components,
+                                                          nodes, args.sampling_algorithm)
+    return save_name
 
 
 def loss(X, W, H, alpha=0):
@@ -144,11 +188,13 @@ def evaluate(loss_fn, graph, W, alpha=0):
 
 
 def init_optimizer(optimizer, graph):
-    assert isinstance(optimizer, Rmiso), "optimizer does not need to be initialized"
+    assert isinstance(optimizer, (Rmiso, Walkman)), "optimizer does not need to be initialized"
     start = time.time()
     for node in graph.nodes:
         optimizer.set_curr_node(node)
         X = graph.nodes[node]['data_matrix']
+        H = graph.nodes[node]['code_matrix']
+        optimizer.set_code_matrix(H)
         optimizer.set_data_matrix(X)
         # be sure to set data matrix before initializing surrogate
         optimizer.init_surrogate()
@@ -166,7 +212,7 @@ def train(optimizer, graph, sampler, loss_fn, n_iter=10, initial_time=0.0):
         node_id = sampler.step()
         X = graph.nodes[node_id]["data_matrix"]
         H = graph.nodes[node_id]["code_matrix"]
-        if isinstance(optimizer, Rmiso):
+        if isinstance(optimizer, (Rmiso, Walkman)):
             optimizer.set_curr_node(node_id)
         optimizer.set_data_matrix(X)
         optimizer.set_code_matrix(H)
@@ -174,6 +220,8 @@ def train(optimizer, graph, sampler, loss_fn, n_iter=10, initial_time=0.0):
         end = time.time()
         graph.nodes[node_id]["code_matrix"] = optimizer.get_code_matrix()
         loss_val = evaluate(loss_fn, graph, optimizer.W, alpha)
+        if i % 100 == 0:
+            print("loss: {:3f}".format(loss_val))
         losses.append(loss_val)
         if i == 0:
             elapsed_time.append(end - start + initial_time)
@@ -206,22 +254,22 @@ def main():
     args = parser.parse_args()
 
     np.random.seed(0)
-    data, dims = build_dataset("mnist", num_examples=args.n_examples)
+    data, labels, dims = build_dataset("mnist", num_examples=args.n_examples)
     m, n, d = dims[0], dims[1], args.n_components
 
     if args.full_batch:
-        print("here")
         assert args.optim in FULL_BATCH_ALGS
         n *= args.n_examples
         X = build_full_batch(data)
         W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d)))
         H = np.maximum(np.random.rand(d, n), np.zeros(shape=(d, n)))
-        optimizer = create_optimizer(args.optim, W, args, X=X, H=H)
+        optimizer = create_optimizer(args.optim, W, args, nodes=args.graph_size, X=X, H=H)
         losses, times = train_full_batch(optimizer, loss, n_iter=args.iterations, n_samples=args.n_examples)
+        nodes = args.graph_size
     else:
         assert args.optim in MINI_BATCH_ALGS
-        graph = build_graph(data, topo=args.graph_topo, num_nodes=args.graph_size, radius=args.radius,
-                            n_components=args.n_components)
+        graph = build_graph(data, labels, topo=args.graph_topo, num_nodes=args.graph_size, radius=args.radius,
+                            n_components=args.n_components, sep_labels=args.sep_labels)
         sampler = {
             "uniform": Uniform,
             "metropolis_hastings": MetropolisHastings,
@@ -229,20 +277,22 @@ def main():
         }[args.sampling_algorithm](graph=graph)
 
         W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d)))
-        optimizer = create_optimizer(args.optim, W, args)
-        if isinstance(optimizer, Rmiso):
+        #W = np.zeros(shape=(m, d))
+        nodes = len(graph.nodes)
+        optimizer = create_optimizer(args.optim, W, args, nodes)
+        if isinstance(optimizer, (Rmiso, Walkman)):
             initialization_time = init_optimizer(optimizer, graph)
         else:
             initialization_time = 0
         losses, times = train(optimizer, graph, sampler, loss, n_iter=args.iterations, initial_time=initialization_time)
 
-    save_name = get_save_name(args)
+    save_name = get_save_name(args, nodes)
     if not os.path.isdir('curve'):
         os.mkdir('curve')
 
     result_dict = {"losses": losses, "times": times}
     path = os.path.join('curve', save_name)
-    pickle.dump(result_dict, open(path, 'wb'))
+    #pickle.dump(result_dict, open(path, 'wb'))
 
 
 if __name__ == "__main__":
