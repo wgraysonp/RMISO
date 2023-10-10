@@ -234,8 +234,7 @@ def main():
     graph_loader, train_eval_loader, test_loader = build_dataset(args)
     num_nodes = len(graph_loader.nodes)
     num_edges = len(graph_loader.edges)
-   # device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    device = 'cpu'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
