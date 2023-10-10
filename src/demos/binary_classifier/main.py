@@ -46,6 +46,7 @@ def get_parser():
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--weight_decay', default=5e-4, type=float,
                         help='weight decay for optimizers')
+    parser.add_argument('--lr_decay', action='store_true', help='sgd with decaying lr')
     parser.add_argument('--save_graph', action='store_true', help='save the data graph')
     parser.add_argument('--init_optimizer', action='store_true', help='initialize gradients for SAG or RMISO')
     parser.add_argument('--epoch_length', default=100, type=int, help='number of iterations per epoch')
@@ -78,7 +79,7 @@ def build_dataset(args):
     return graph, train_eval_loader, test_loader
 
 
-def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
+def get_ckpt_name(args, model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momentum=0.9, beta1=0.9, beta2=0.999,
                   gamma=1e-3, rho=1, delta=1, graph_size=10, graph_edges=10, sep_classes=False, graph_topo='random', sampling_alg='uniform'):
     name = {
         'sgd': 'lr{}-momentum{}'.format(lr, momentum),
@@ -90,6 +91,8 @@ def get_ckpt_name(model='resnet', optimizer='sgd', lr=1e-3, final_lr=1e-3, momen
         'rmiso': 'lr{}-rho{:f}-delta{:f}'.format(lr, rho, delta),
         'mcsag': 'lr{:f}-rho{:f}-delta{:f}'.format(lr, rho, delta),
     }[optimizer]
+    if args.lr_decay:
+        optimizer = optimizer + "-lr_decay"
     if sep_classes:
         return '{}-{}-{}-nodes{}-edges{}-{}-sep-{}'.format(model, optimizer, name, graph_size, graph_edges, graph_topo, sampling_alg)
     else:
@@ -170,7 +173,7 @@ def initialize_optimizer(net, device, graph, optimizer, criterion):
         optimizer.init_params()
 
 
-def train(net, epoch, n_iter, device, graph, optimizer, criterion):
+def train(net, epoch, n_iter, device, graph, optimizer, criterion, scheduler, lr_decay=False):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
@@ -190,6 +193,8 @@ def train(net, epoch, n_iter, device, graph, optimizer, criterion):
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
         optimizer.step()
+        if lr_decay:
+            scheduler.step()
         #train_loss += loss.item()/n_iter
         #predicted = (outputs > 0.5).float() if isinstance(net, OneLayer) else (outputs > 0.0).float() - (outputs <= 0.0).float()
         #total += targets.size(0)
@@ -235,7 +240,7 @@ def main():
     num_nodes = len(graph_loader.nodes)
     num_edges = len(graph_loader.edges)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    ckpt_name = get_ckpt_name(model=args.model, optimizer=args.optim, lr=args.lr,
+    ckpt_name = get_ckpt_name(args, model=args.model, optimizer=args.optim, lr=args.lr,
                               final_lr=args.final_lr, momentum=args.momentum,
                               beta1=args.beta1, beta2=args.beta2, gamma=args.gamma,
                               graph_size=num_nodes, rho=args.rho, delta=args.delta, graph_edges=num_edges,
@@ -264,9 +269,12 @@ def main():
     test_losses = []
     iter_count = []
 
+    lambda1 = lambda epoch: args.lr * (epoch+1)**(-0.501)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+
     n_iter = args.epoch_length
     for epoch in range(start_epoch + 1, args.epochs):
-        train(net, epoch, n_iter, device, graph_loader, optimizer, criterion)
+        train(net, epoch, n_iter, device, graph_loader, optimizer, criterion, scheduler, lr_decay=args.lr_decay)
         train_acc, train_loss = evaluate(net, device, train_eval_loader, criterion, data_set='train')
         test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set='test')
 
