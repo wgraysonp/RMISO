@@ -69,7 +69,7 @@ def build_full_batch(data):
     X = data[0]
     for i in range(1, n):
         X = np.hstack((X, data[i]))
-    return X
+    return X.astype('float32')
 
 
 def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_components=15, sep_labels=False):
@@ -90,18 +90,18 @@ def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_comp
             while m*i < len(idxs):
                 data_idx = idxs[m*i:m*(i+1)]
                 pos = tuple(random_gen.random() for k in range(2))
-                data_matrix = np.hstack(tuple(data[data_idx]))
+                data_matrix = np.hstack(tuple(data[data_idx])).astype('float32')
                 num_examples = len(data_idx)
                 code_dims = (n_components, data_matrix.shape[1])
-                code_mat = np.random.rand(*code_dims)
+                code_mat = np.random.rand(*code_dims).astype('float32')
                 #code_mat = np.zeros(*code_dims)
                 # ensure the code matrix at each node is the same shape by adding zeros
-                if m*(i+1) > len(idxs):
-                    num_zero_mats = m*(i+1) - len(idxs)
-                    data_zeros = np.zeros((28, 28*num_zero_mats))
-                    code_zeros = np.zeros((n_components, 28*num_zero_mats))
-                    data_matrix = np.hstack((data_matrix, data_zeros))
-                    code_mat = np.hstack((code_mat, code_zeros))
+                #if m*(i+1) > len(idxs):
+                    #num_zero_mats = m*(i+1) - len(idxs)
+                   # data_zeros = np.zeros((28, 28*num_zero_mats))
+                    #code_zeros = np.zeros((n_components, 28*num_zero_mats))
+                   # data_matrix = np.hstack((data_matrix, data_zeros))
+                   # code_mat = np.hstack((code_mat, code_zeros))
                 graph.add_node(j, pos=pos, num_examples=num_examples, data_matrix=data_matrix, code_matrix=code_mat)
                 i += 1
                 j += 1
@@ -119,10 +119,10 @@ def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_comp
             else:
                 data_idx = idxs[m*i:m*(i+1)]
             pos = tuple(random_gen.random() for k in range(2))
-            data_matrix = np.hstack(tuple(data[data_idx]))
+            data_matrix = np.hstack(tuple(data[data_idx])).astype('float32')
             num_examples = len(data_idx)
             code_dims = (n_components, data_matrix.shape[1])
-            code_mat = np.random.rand(*code_dims)
+            code_mat = np.random.rand(*code_dims).astype('float32')
             graph.add_node(i, pos=pos, num_examples=num_examples, data_matrix=data_matrix, code_matrix=code_mat)
 
     if topo == "geometric":
@@ -140,7 +140,7 @@ def create_optimizer(optim, W, args, nodes, X=None, H=None):
     elif optim == "mu":
         return MU(W, rho=0, delta=0, n_components=args.n_components, alpha=args.alpha, eps=args.eps, X=X, H=H)
     elif optim == "psgd":
-        return PSGD(W, X=X, H=H, lr=args.lr, eta=args.eta, n_nodes=args.graph_size,
+        return PSGD(W, lr=args.lr, eta=args.eta, n_nodes=args.graph_size,
                     n_components=args.n_components, alpha=args.alpha)
     elif optim == "adagrad":
         return AdaGrad(W, lr=args.lr, n_components=args.n_components, alpha=args.alpha, eps=args.eps)
@@ -212,8 +212,9 @@ def train(optimizer, graph, sampler, loss_fn, n_iter=10, initial_time=0.0):
         node_id = sampler.step()
         X = graph.nodes[node_id]["data_matrix"]
         H = graph.nodes[node_id]["code_matrix"]
-        if isinstance(optimizer, (Rmiso, Walkman)):
-            optimizer.set_curr_node(node_id)
+        optimizer.set_curr_node(node_id)
+        #if isinstance(optimizer, (Rmiso, Walkman)):
+           # optimizer.set_curr_node(node_id)
         optimizer.set_data_matrix(X)
         optimizer.set_code_matrix(H)
         optimizer.step()
@@ -276,11 +277,11 @@ def main():
             "random_walk": RandomWalk
         }[args.sampling_algorithm](graph=graph)
 
-        W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d)))
+        W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d))).astype('float32')
         #W = np.zeros(shape=(m, d))
         nodes = len(graph.nodes)
         optimizer = create_optimizer(args.optim, W, args, nodes)
-        if isinstance(optimizer, (Rmiso, Walkman)):
+        if isinstance(optimizer, Rmiso):
             initialization_time = init_optimizer(optimizer, graph)
         else:
             initialization_time = 0
@@ -292,7 +293,7 @@ def main():
 
     result_dict = {"losses": losses, "times": times}
     path = os.path.join('curve', save_name)
-    #pickle.dump(result_dict, open(path, 'wb'))
+    pickle.dump(result_dict, open(path, 'wb'))
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import numpy as np
 from numpy import linalg as LA, ndarray
 from scipy.optimize import minimize
 from sklearn.decomposition import SparseCoder
+import time
 
 
 class NMFOptim:
@@ -54,10 +55,9 @@ class NMFOptim:
                 H1[k, :] = H1[k, :] - (1 / (((i + 1) ** 0) * (A[k, k] + 1))) * eta*grad
                 # nonnegativity constraint
                 H1[k, :] = np.maximum(H1[k, :], np.zeros(shape=(H1.shape[1],)))
-                H0 = H1
+                #H0 = H1
 
-            dist = LA.norm(H1 - H1_old, 2) / LA.norm(H1_old, 2)
-            H1_old = H1
+            dist = LA.norm(H1 - H1_old, 'fro') / LA.norm(H1_old, 'fro')
             i = i + 1
         return H1
 
@@ -115,10 +115,6 @@ class Walkman(NMFOptim):
 
         grad_H = np.dot(A, y_H) - B + self.alpha*np.ones_like(y_H)
 
-        #print(LA.norm(grad_H, 'fro'))
-        #print("max h" + str(np.amax(self.H)))
-        #print(np.amax(self.W))
-
         A = y_H @ y_H.T
         B = y_H @ self.X.T
 
@@ -150,7 +146,7 @@ class ONMF(NMFOptim):
         self.data_rows = data_rows
         self.aggregates = np.zeros((self.n_components, self.n_components)), np.zeros((self.data_rows, self.n_components))
 
-    def code_and_update_aggregates(self, sub_iter=1):
+    def code_and_update_aggregates(self, sub_iter=10):
         A, B = self.aggregates
         X, H0 = self.X, self.H
 
@@ -160,12 +156,11 @@ class ONMF(NMFOptim):
 
         A = (n-1)/n*A + (1/n)*np.dot(H, H.T)
         B = (n-1)/n*B + (1/n)*np.dot(X, H.T)
-
         self.H = H
         self.aggregates = A, B
         self.step_count += 1
 
-    def update_dict(self, sub_iter=100, stopping_diff=0.001):
+    def update_dict(self, sub_iter=10, stopping_diff=0.01):
         A, B = self.aggregates
         k = self.n_components
         W1 = self.W.copy()
@@ -181,8 +176,8 @@ class ONMF(NMFOptim):
                 step_2 = 1/max(LA.norm(u), 1)
                 W1[:, j] = step_2*u
                 W1[:, j] = np.maximum(W1[:, j], np.zeros(shape=(d,)))
-                #W1[:, j] = (1 / np.maximum(1, LA.norm(W1[:, j]))) * W1[:, j]
-            dist = LA.norm(W1 - W1_old, 2) / LA.norm(W1_old, 2)
+                W1[:, j] = (1 / np.maximum(1, LA.norm(W1[:, j]))) * W1[:, j]
+            dist = LA.norm(W1 - W1_old, 'fro') / LA.norm(W1_old, 'fro')
 
         self.W = W1
 
@@ -207,14 +202,24 @@ class AdaGrad(NMFOptim):
         H1 = self.H.copy()
 
         if self.H_sum is None:
-            self.H_sum = np.zeros_like(self.H)
+            #self.H_sum = np.zeros_like(self.H)
+            self.H_sum = {}
 
+        # this is different
+        if self.curr_node not in self.H_sum:
+            self.H_sum[self.curr_node] = np.zeros_like(self.H)
+
+        H_sum = self.H_sum[self.curr_node]
         for k in np.arange(self.H.shape[0]):
             grad = np.dot(A[k, :], self.H) - B[k, :] + self.alpha*np.ones(self.H.shape[1])
-            self.H_sum[k, :] = self.H_sum[k, :] + grad**2
-            step_size = self.lr*(1/(self.H_sum[k, :]**(1/2) + self.eps))
+            #self.H_sum[k, :] = self.H_sum[k, :] + grad**2
+            H_sum[k, :] = H_sum[k, :] + grad**2
+           #step_size = self.lr*(1/(self.H_sum[k, :]**(1/2) + self.eps))
+            step_size = self.lr*(1/(H_sum[k, :]**(1/2) + self.eps))
             H1[k, :] = self.H[k, :] - step_size * grad
             H1[k, :] = np.maximum(H1[k, :], np.zeros(shape=(H1.shape[1],)))
+
+        self.H_sum[self.curr_node] = H_sum
 
         A = self.H @ self.H.T
         B = self.H @ self.X.T
@@ -252,7 +257,6 @@ class PSGD(NMFOptim):
         B = self.W.T @ self.X
 
         H1 = self.H.copy()
-        grad_sum = 0
 
         for k in np.arange(self.H.shape[0]):
             grad = np.dot(A[k, :], self.H) - B[k, :] + self.alpha * np.ones(self.H.shape[1])
@@ -269,7 +273,7 @@ class PSGD(NMFOptim):
             grad = np.dot(self.W, A[:, k]) - B.T[:, k]
             W1[:, k] = self.W[:, k] - step_size * grad
             W1[:, k] = np.maximum(W1[:, k], np.zeros(shape=(d,)))
-            W1[:, k] = (1 / max(1.0, LA.norm(W1[:, k]))) * W1[:, k]
+            W1[:, k] = (1 / np.maximum(1, LA.norm(W1[:, k]))) * W1[:, k]
 
         self.H = H1
         self.W = W1
@@ -336,37 +340,40 @@ class Rmiso(NMFOptim):
 
     def init_surrogate(self):
         m, n = self.n_components, self.X.shape[1]
-        H0 = np.random.rand(m, n)
+        #H0 = np.random.rand(m, n).astype('float32')
+        H0 = self.H
         self.H = self.update_code(H0)
         self.code_mats[self.curr_node] = self.H.copy()
         n = self.n_nodes
         if self.aggregates is not None:
             A, B = self.aggregates
-            A = A + np.dot(self.H, self.H.T)/n
-            B = B + np.dot(self.H, self.X.T)/n
+            A = A + self.H @ self.H.T/n
+            B = B + self.H @ self.X.T/n
         else:
-            A = np.dot(self.H, self.H.T)/n
-            B = np.dot(self.H, self.X.T)/n
+            A = self.H @ self.H.T/n
+            B = self.H @ self.X.T/n
         self.aggregates = (A, B)
 
     def code_and_update_aggregates(self, sub_iter=10):
         A, B = self.aggregates
         X, H_old = self.X, self.code_mats[self.curr_node]
 
-        if self.curr_node in self.code_mats:
-            H0 = self.code_mats[self.curr_node]
-        else:
-            # code matrix has not yet been initialized. Use random initialization
-            m, n = self.n_components, self.X.shape[1]
-            H0 = np.maximum(np.random.rand(m, n), np.zeros(m, n))
 
-        H = self.update_code(H0, sub_iter=sub_iter)
+       # if self.curr_node in self.code_mats:
+            #H0 = self.code_mats[self.curr_node]
+        #else:
+            # code matrix has not yet been initialized. Use random initialization
+            #m, n = self.n_components, self.X.shape[1]
+            #H0 = np.maximum(np.random.rand(m, n), np.zeros(m, n))
+
+        H = self.update_code(H_old, sub_iter=sub_iter)
         n = self.n_nodes
 
-        A = A + (np.dot(H, H.T) - np.dot(H_old, H_old.T))/n
-        B = B + np.dot(H - H_old, X.T)/n
+        A = A + (H @ H.T - H_old @ H_old.T)/n
+        B = B + (H - H_old) @ X.T/n
 
         self.code_mats[self.curr_node] = H.copy()
+
         self.H = H
         self.aggregates = A, B
 
@@ -397,7 +404,7 @@ class Rmiso(NMFOptim):
             if rad is not None:
                 W1 = self.project_onto_intersection(W1, W, rad)
 
-            dist = LA.norm(W1 - W1_old, 2)/LA.norm(W1_old, 2)
+            dist = LA.norm(W1 - W1_old, 'fro')/LA.norm(W1_old, 'fro')
             i = i+1
 
         self.W = W1
