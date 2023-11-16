@@ -3,7 +3,6 @@ import networkx as nx
 import numpy as np
 from sklearn.datasets import fetch_openml
 import numpy.linalg as LA
-import matplotlib.pyplot as plt
 import random
 from sampling_algorithms import Uniform, MetropolisHastings, RandomWalk
 from tqdm import tqdm
@@ -15,7 +14,7 @@ import pickle
 GRAPH_TOPOS = ['geometric']
 DATASETS = ['mnist']
 FULL_BATCH_ALGS = ['mu', 'psgd']
-MINI_BATCH_ALGS = ['rmiso', 'psgd', 'adagrad', 'onmf', 'walkman']
+MINI_BATCH_ALGS = ['rmiso', 'psgd', 'adagrad', 'onmf']
 
 
 def get_parser():
@@ -31,7 +30,7 @@ def get_parser():
                         help='number of dictionary components (columns in the matrix)')
     parser.add_argument('--n_examples', default=100, type=int, help='number of training data pointsw')
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
-                        choices=['rmiso', 'minibatch_cd', 'mu', 'psgd', 'adagrad', 'onmf', 'walkman'])
+                        choices=['rmiso', 'minibatch_cd', 'mu', 'psgd', 'adagrad', 'onmf'])
     parser.add_argument('--lr', default=1e-3, type=float, help='adagrad and psgd learning rate')
     parser.add_argument('--eta', default=0.0, type=float, help='adagrad and psgd step decay parameter')
     parser.add_argument('--rho', default=0, type=float, help='rmiso prox reg parameter')
@@ -40,7 +39,6 @@ def get_parser():
                         help='positivity enforcing constant for denominators of mu and adagrad')
     parser.add_argument('--dynamic_reg', default=False, type=bool, help='use dynamic regularization for rmiso')
     parser.add_argument('--beta', default=1, type=float, help='scaling factor for rmiso dynamic prox reg')
-    parser.add_argument('--beta_wm', default=100, type=float, help='walkman hyperparameter')
     parser.add_argument('--iterations', default=100, type=int, help='number of iterations to run')
     parser.add_argument('--full_batch', action='store_true', help="turn on full-batch flag for full-batch algs like MU")
     parser.add_argument('--sep_labels', action='store_true', help="each node only stores data with same label")
@@ -82,7 +80,6 @@ def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_comp
         N = len(data)
         m = int(N / num_nodes)
         label_set = set(labels)
-        num_labels = len(label_set)
         j = 0
         for num in label_set:
             idxs = np.argwhere(labels == num).reshape(1, -1)[0].tolist()
@@ -94,14 +91,6 @@ def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_comp
                 num_examples = len(data_idx)
                 code_dims = (n_components, data_matrix.shape[1])
                 code_mat = np.random.rand(*code_dims).astype('float32')
-                #code_mat = np.zeros(*code_dims)
-                # ensure the code matrix at each node is the same shape by adding zeros
-                #if m*(i+1) > len(idxs):
-                    #num_zero_mats = m*(i+1) - len(idxs)
-                   # data_zeros = np.zeros((28, 28*num_zero_mats))
-                    #code_zeros = np.zeros((n_components, 28*num_zero_mats))
-                   # data_matrix = np.hstack((data_matrix, data_zeros))
-                   # code_mat = np.hstack((code_mat, code_zeros))
                 graph.add_node(j, pos=pos, num_examples=num_examples, data_matrix=data_matrix, code_matrix=code_mat)
                 i += 1
                 j += 1
@@ -146,8 +135,6 @@ def create_optimizer(optim, W, args, nodes, X=None, H=None):
         return AdaGrad(W, lr=args.lr, n_components=args.n_components, alpha=args.alpha, eps=args.eps)
     elif optim == 'onmf':
         return ONMF(W, n_components=args.n_components, alpha=args.alpha)
-    elif optim == 'walkman':
-        return Walkman(W, beta=args.beta_wm, n_components=args.n_components, alpha=args.alpha, n_nodes=nodes)
     else:
         raise ValueError("Invalid optimizer: {}".format(optim))
 
@@ -188,7 +175,7 @@ def evaluate(loss_fn, graph, W, alpha=0):
 
 
 def init_optimizer(optimizer, graph):
-    assert isinstance(optimizer, (Rmiso, Walkman)), "optimizer does not need to be initialized"
+    assert isinstance(optimizer, Rmiso), "optimizer does not need to be initialized"
     start = time.time()
     for node in graph.nodes:
         optimizer.set_curr_node(node)
@@ -278,7 +265,6 @@ def main():
         }[args.sampling_algorithm](graph=graph)
 
         W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d))).astype('float32')
-        #W = np.zeros(shape=(m, d))
         nodes = len(graph.nodes)
         optimizer = create_optimizer(args.optim, W, args, nodes)
         if isinstance(optimizer, Rmiso):
