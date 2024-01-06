@@ -71,7 +71,9 @@ class RMISO(Optimizer):
                 if group['dynamic_step']:
                     state['return_time'].add_(torch.ones(self.num_nodes))
                     state['return_time'][self.curr_node] = 0
-                    group['rho'] = torch.max(state['return_time'])
+                    reg = group['rho'] + torch.max(state['return_time'])
+                else:
+                    reg = group['rho']
 
                 state['step'] += 1
 
@@ -89,8 +91,8 @@ class RMISO(Optimizer):
                 state['avg_param'] = avg_param
 
                 L = 1/group['lr']
-                step_size = 1/(L + group['delta']*group['rho'])
-                alpha = group['delta']*group['rho']*step_size
+                step_size = 1/(L + reg)
+                alpha = reg*step_size
 
                 avg_param_reg = avg_param.clone()
 

@@ -81,6 +81,7 @@ class Sequential:
         self.graph = graph
 
     def step(self):
-        N = self.graph.num_nodes
+        N = len(self.graph.nodes)
         self.state = (self.state + 1) % N
+        return self.state
 

@@ -4,25 +4,25 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 import numpy.linalg as LA
 import random
-from sampling_algorithms import Uniform, MetropolisHastings, RandomWalk
+from sampling_algorithms import Uniform, MetropolisHastings, RandomWalk, Sequential
 from tqdm import tqdm
 import argparse
 import os
 import time
 import pickle
 
-GRAPH_TOPOS = ['geometric']
+GRAPH_TOPOS = ['geometric', 'cycle']
 DATASETS = ['mnist']
 FULL_BATCH_ALGS = ['mu', 'psgd']
-MINI_BATCH_ALGS = ['rmiso', 'psgd', 'adagrad', 'onmf']
+MINI_BATCH_ALGS = ['rmiso', 'psgd', 'adagrad', 'onmf', 'sag']
 
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Distributed Non-Negative Matrix Factorization")
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
-                        choices=['uniform', 'metropolis_hastings', 'random_walk'])
+                        choices=['uniform', 'metropolis_hastings', 'random_walk', 'sequential'])
     parser.add_argument('--graph_size', default=50, type=int, help='number of vertices in the graph')
-    parser.add_argument('--graph_topo', default='geometric', type=str, help='graph topology', choices=['geometric'])
+    parser.add_argument('--graph_topo', default='geometric', type=str, help='graph topology', choices=['geometric', 'cycle'])
     parser.add_argument('--radius', default=0.3, type=float, help='connection radius for geometric graph')
     parser.add_argument('--dataset', default='mnist', type=str, help='data set to train dictionary on')
     parser.add_argument('--alpha', default=0, type=float, help='L1 regularization parameter for sparse coding')
@@ -30,7 +30,7 @@ def get_parser():
                         help='number of dictionary components (columns in the matrix)')
     parser.add_argument('--n_examples', default=100, type=int, help='number of training data pointsw')
     parser.add_argument('--optim', default='rmiso', type=str, help='optimizer',
-                        choices=['rmiso', 'minibatch_cd', 'mu', 'psgd', 'adagrad', 'onmf'])
+                        choices=['rmiso', 'sag', 'mu', 'psgd', 'adagrad', 'onmf'])
     parser.add_argument('--lr', default=1e-3, type=float, help='adagrad and psgd learning rate')
     parser.add_argument('--eta', default=0.0, type=float, help='adagrad and psgd step decay parameter')
     parser.add_argument('--rho', default=0, type=float, help='rmiso prox reg parameter')
@@ -117,6 +117,9 @@ def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_comp
     if topo == "geometric":
         graph.add_edges_from(nx.geometric_edges(graph, radius))
 
+    elif topo == "cycle":
+        graph.add_edges_from(nx.cycle_graph(graph.nodes).edges)
+
     assert nx.is_connected(graph)
 
     return graph
@@ -130,11 +133,13 @@ def create_optimizer(optim, W, args, nodes, X=None, H=None):
         return MU(W, rho=0, delta=0, n_components=args.n_components, alpha=args.alpha, eps=args.eps, X=X, H=H)
     elif optim == "psgd":
         return PSGD(W, lr=args.lr, eta=args.eta, n_nodes=args.graph_size,
-                    n_components=args.n_components, alpha=args.alpha)
+                    n_components=args.n_components, alpha=args.alpha, eps=args.eps)
     elif optim == "adagrad":
         return AdaGrad(W, lr=args.lr, n_components=args.n_components, alpha=args.alpha, eps=args.eps)
     elif optim == 'onmf':
         return ONMF(W, n_components=args.n_components, alpha=args.alpha)
+    elif optim == 'sag':
+        return SAG(W, n_nodes=nodes, n_components=args.n_components, alpha=args.alpha, lr=args.lr)
     else:
         raise ValueError("Invalid optimizer: {}".format(optim))
 
@@ -175,7 +180,7 @@ def evaluate(loss_fn, graph, W, alpha=0):
 
 
 def init_optimizer(optimizer, graph):
-    assert isinstance(optimizer, Rmiso), "optimizer does not need to be initialized"
+    assert isinstance(optimizer, (Rmiso, SAG)), "optimizer does not need to be initialized"
     start = time.time()
     for node in graph.nodes:
         optimizer.set_curr_node(node)
@@ -200,13 +205,14 @@ def train(optimizer, graph, sampler, loss_fn, n_iter=10, initial_time=0.0):
         X = graph.nodes[node_id]["data_matrix"]
         H = graph.nodes[node_id]["code_matrix"]
         optimizer.set_curr_node(node_id)
-        #if isinstance(optimizer, (Rmiso, Walkman)):
-           # optimizer.set_curr_node(node_id)
         optimizer.set_data_matrix(X)
         optimizer.set_code_matrix(H)
         optimizer.step()
         end = time.time()
         graph.nodes[node_id]["code_matrix"] = optimizer.get_code_matrix()
+        if isinstance(optimizer, SAG):
+            for node in graph.nodes:
+                graph.nodes[node]["code_matrix"] = optimizer.code_mats[node]
         loss_val = evaluate(loss_fn, graph, optimizer.W, alpha)
         if i % 100 == 0:
             print("loss: {:3f}".format(loss_val))
@@ -261,13 +267,15 @@ def main():
         sampler = {
             "uniform": Uniform,
             "metropolis_hastings": MetropolisHastings,
-            "random_walk": RandomWalk
+            "random_walk": RandomWalk,
+            "sequential": Sequential
         }[args.sampling_algorithm](graph=graph)
 
         W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d))).astype('float32')
+
         nodes = len(graph.nodes)
         optimizer = create_optimizer(args.optim, W, args, nodes)
-        if isinstance(optimizer, Rmiso):
+        if isinstance(optimizer, (Rmiso, SAG)):
             initialization_time = init_optimizer(optimizer, graph)
         else:
             initialization_time = 0
@@ -278,7 +286,7 @@ def main():
         os.mkdir('curve')
 
     result_dict = {"losses": losses, "times": times}
-    path = os.path.join('curve', save_name)
+    path = os.path.join('curve/cycle', save_name) if args.graph_topo == "cycle" else os.path.join('curve', save_name)
     pickle.dump(result_dict, open(path, 'wb'))
 
 

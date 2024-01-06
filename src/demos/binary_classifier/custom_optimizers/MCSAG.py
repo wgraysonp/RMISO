@@ -73,6 +73,7 @@ class MCSAG(Optimizer):
 
                 L = 1/group['lr']
                 denom = L*(group['tau'] + group['delta']*group['rho'])
+                print("rho :{}".format(group['rho']))
                 step_size = 1/denom
 
                 p.data.add_(-avg_grad, alpha=step_size)

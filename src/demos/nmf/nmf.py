@@ -110,6 +110,79 @@ class ONMF(NMFOptim):
         self.update_dict()
 
 
+class SAG(NMFOptim):
+
+    def __init__(self, W, n_nodes=100, lr=1e-3, **kwargs):
+        super().__init__(W, **kwargs)
+        self.lr = lr
+        self.n_nodes = n_nodes
+        self.H_grads = {}
+        self.code_mats = {}
+        self.W_grads = {}
+        self.avg_W_grad = None
+
+    def init_surrogate(self):
+        '''
+        Initialize SAG gradients
+        '''
+        n = self.n_nodes
+        A = self.W.T @ self.W
+        B = self.W.T @ self.X
+
+        H_grad = np.dot(A, self.H) - B + self.alpha*np.ones_like(self.H)
+        self.H_grads[self.curr_node] = H_grad.copy()
+        self.code_mats[self.curr_node] = self.H.copy()
+
+        A = self.H @ self.H.T
+        B = self.H @ self.X.T
+
+        W_grad = np.dot(self.W, A) - B.T
+        self.W_grads[self.curr_node] = W_grad.copy()
+
+        if self.avg_W_grad is not None:
+            self.avg_W_grad = self.avg_W_grad + 1/n*W_grad
+        else:
+            self.avg_W_grad = 1/n*W_grad
+
+    def step(self):
+
+        n = self.n_nodes
+
+        A = self.W.T @ self.W
+        B = self.W.T @ self.X
+
+        H_grad = np.dot(A, self.H) - B + self.alpha * np.ones_like(self.H)
+        self.H_grads[self.curr_node] = H_grad.copy()
+
+        for i in range(n):
+            if True:
+                H = self.code_mats[i]
+                H1 = H.copy()
+                for k in np.arange(self.H.shape[0]):
+                    grad = self.H_grads[i][k, :]
+                    H1[k, :] = H[k, :] - self.lr*grad
+                    H1[k, :] = np.maximum(H1[k, :], np.zeros(shape=(H1.shape[1],)))
+                self.code_mats[i] = H1
+
+        A = self.H @ self.H.T
+        B = self.H @ self.X.T
+        W1 = self.W.copy()
+        d, r = np.shape(W1)
+        W_grad = np.dot(self.W, A) - B.T
+        W_grad_old = self.W_grads[self.curr_node]
+        self.avg_W_grad = self.avg_W_grad + 1/n*(W_grad - W_grad_old)
+        self.W_grads[self.curr_node] = W_grad.copy()
+
+        for k in np.arange(self.W.shape[1]):
+            grad = self.avg_W_grad[:, k]
+            W1[:, k] = self.W[:, k] - self.lr * grad
+            W1[:, k] = np.maximum(W1[:, k], np.zeros(shape=(d,)))
+            W1[:, k] = (1 / np.maximum(1, LA.norm(W1[:, k]))) * W1[:, k]
+
+        self.H = self.code_mats[self.curr_node]
+        self.W = W1
+
+
 class AdaGrad(NMFOptim):
 
     def __init__(self, W, lr=1e-3, eps=1e-10, **kwargs):
@@ -165,14 +238,16 @@ class AdaGrad(NMFOptim):
 
 class PSGD(NMFOptim):
 
-    def __init__(self, W, lr=1e-3, eta=0.5, **kwargs):
+    def __init__(self, W, lr=1e-3, eta=0.5, eps=0, **kwargs):
         super().__init__(W, **kwargs)
         self.step_count = 1
         self.lr = lr
         self.eta = eta
+        self.eps = eps
 
     def step(self):
-        step_size = self.lr*float(self.step_count)**(-self.eta)
+        #step_size = self.lr*float(self.step_count)**(-self.eta)
+        step_size = self.lr*1/(self.eta*self.step_count + self.eps)
 
         A = self.W.T @ self.W
         B = self.W.T @ self.X
@@ -299,15 +374,17 @@ class Rmiso(NMFOptim):
         if self.dynamic_reg:
             self.return_times = self.return_times + np.ones(self.n_nodes)
             self.return_times[self.curr_node] = 0
-            self.rho = self.beta*np.amax(self.return_times)
+            reg = self.rho + np.amax(self.return_times)
+        else:
+            reg = self.rho
 
-        rho = self.rho if not self.dr else 0
+        reg= self.rho if not self.dr else 0
 
         while (i < sub_iter) and (dist > stopping_diff):
             W1_old = W1.copy()
             for j in np.arange(r):
-                grad = np.dot(W1, A[:, j]) - B.T[:, j] + rho*(W1[:, j] - W[:, j])
-                step_size = (1 / (A[j, j] + 1 + rho))
+                grad = np.dot(W1, A[:, j]) - B.T[:, j] + reg*(W1[:, j] - W[:, j])
+                step_size = (1 / (A[j, j] + 1 + reg))
                 W1[:, j] = W1[:, j] - step_size * grad
                 W1[:, j] = np.maximum(W1[:, j], np.zeros(shape=(d, )))
                 W1[:, j] = (1/np.maximum(1, LA.norm(W1[:, j])))*W1[:, j]

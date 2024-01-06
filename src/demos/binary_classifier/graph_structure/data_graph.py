@@ -3,16 +3,17 @@ from networkx.utils import pairwise
 import random
 import matplotlib.pyplot as plt
 if __name__ == "__main__":
-    from sampling_algorithms import Uniform, MetropolisHastings, RandomWalk
+    from sampling_algorithms import Uniform, MetropolisHastings, RandomWalk, Sequential
 else:
-    from .sampling_algorithms import Uniform, MetropolisHastings, RandomWalk
-import torch
+    from .sampling_algorithms import Uniform, MetropolisHastings, RandomWalk, Sequential
 from torch.utils.data import DataLoader, Subset
 
+#random.seed(17)
+random.seed(23)
 
 class DataGraph(nx.Graph):
 
-    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=0, topo='random', radius=0.3,
+    def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=1, topo='random', radius=0.3,
                  algorithm='uniform', sep_classes=False):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
@@ -21,7 +22,7 @@ class DataGraph(nx.Graph):
                 raise ValueError("Number of edges must be at least {}".format(num_nodes - 1))
             if num_edges > num_nodes*(num_nodes-1)/2:
                 raise ValueError("Number of edges can be no larger than {}".format(num_nodes*(num_nodes-1)/2))
-        if algorithm not in ['uniform', 'metropolis_hastings', 'random_walk']:
+        if algorithm not in ['uniform', 'metropolis_hastings', 'random_walk', 'sequential']:
             raise ValueError("Invalid sampling algorithm")
 
         super().__init__()
@@ -45,6 +46,8 @@ class DataGraph(nx.Graph):
             self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self)
         elif algorithm == "random_walk":
             self.sampling_alg = RandomWalk(initial_state=initial_state, graph=self)
+        elif algorithm == "sequential":
+            self.sampling_alg = Sequential(initial_state=initial_state, graph=self)
 
     def _create_nodes(self):
         if not self.sep_classes:
@@ -64,6 +67,7 @@ class DataGraph(nx.Graph):
         else:
             nodes_per_label = int(self.num_nodes/len(self.data_set.classes))
             node_count = 0
+            node_list = []
             for label in self.data_set.classes:
                 idxs = (self.data_set.targets == label).nonzero()[:, 0].tolist()
                 N = len(idxs)
@@ -77,8 +81,11 @@ class DataGraph(nx.Graph):
                     data_subset = Subset(self.data_set, data_idx)
                     loader = DataLoader(data_subset, batch_size=batch_size, shuffle=False, num_workers=0)
                     pos = tuple(self.random_gen.random() for k in range(2))
-                    self.add_node(node_count, data=data_idx, pos=pos, loader=loader)
+                    node_list.append((node_count, {"data": data_idx, "pos": pos, "loader": loader}))
+                    #self.add_node(node_count, data=data_idx, pos=pos, loader=loader)
                     node_count += 1
+            random.shuffle(node_list)
+            self.add_nodes_from(node_list)
 
     def _connect_graph(self):
         if self.topo == "random":
@@ -88,6 +95,10 @@ class DataGraph(nx.Graph):
             self.num_edges = len(self.edges)
         elif self.topo == "geometric":
             self._connect_geometric(self.radius)
+        elif self.topo == 'lonely':
+            self._connect_lonely()
+        elif self.topo == 'complete':
+            self._connect_complete()
         else:
             raise ValueError("Graph topology not supported")
 
@@ -98,6 +109,14 @@ class DataGraph(nx.Graph):
 
     def _connect_geometric(self, r):
         self.add_edges_from(nx.geometric_edges(self, r))
+
+    def _connect_lonely(self):
+        self.add_edges_from(nx.complete_graph(self.nodes).edges)
+        for i in range(1, len(self.nodes)-1):
+            self.remove_edge(0, i)
+
+    def _connect_complete(self):
+        self.add_edges_from(nx.complete_graph(self.nodes).edges)
 
     def _connect_random(self):
 
@@ -130,8 +149,8 @@ class DataGraph(nx.Graph):
 
 
 def test():
-    data_set = list(range(100))
-    G = DataGraph(data_set, num_nodes=7, num_edges=11, topo='cycle')
+    data_set = list(range(10))
+    G = DataGraph(data_set, num_nodes=10, num_edges=11, topo='cycle')
     pos = nx.spring_layout(G)
     nx.draw(G, pos)
     plt.show()
