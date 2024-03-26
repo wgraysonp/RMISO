@@ -1,5 +1,6 @@
 from sklearn.datasets import fetch_covtype
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import normalize
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_openml
 import torch
@@ -12,10 +13,11 @@ import matplotlib.pyplot as plt
 
 class CovType(Dataset):
 
-    def __init__(self, train=True, zero_one=True):
+    def __init__(self, train=True, zero_one=True, noise=0):
         self.train = train
         # label samples as either 0 or 1 if true and -1 or 1 if false
         self.p = 54
+        self.noise = noise
         self.zero_one = zero_one
         self._load_and_preprocess_data()
         self.length = self.features.shape[0]
@@ -34,7 +36,7 @@ class CovType(Dataset):
         else:
             y = np.array(list(map(lambda x: 1 if x == 2 else -1, y)))
         sc = StandardScaler()
-        X = sc.fit_transform(X)
+        X = sc.fit_transform(np.asarray(X))
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=2, train_size=450000)
         if self.train:
             self.features = torch.tensor(X_train, dtype=torch.float32)
@@ -44,9 +46,10 @@ class CovType(Dataset):
             self.targets = torch.tensor(y_test, dtype=torch.float32).reshape(-1, 1)
 
 class W8a(Dataset):
-    def __init__(self, train=True, zero_one=False):
+    def __init__(self, train=True, zero_one=False, noise=0):
         self.train = train
         self.zero_one = zero_one
+        self.noise = noise
         self.p = 300
         self._load_and_preprocess_data()
         self.length = self.features.shape[0]
@@ -75,10 +78,11 @@ class W8a(Dataset):
 class Synthetic(Dataset):
     torch.manual_seed(78)
 
-    def __init__(self, train=True, zero_one=False, p=200):
+    def __init__(self, train=True, zero_one=False, noise=0, p=200):
         self.train = train
         self.zero_one = zero_one
         self.p = p
+        self.noise = noise
         self._load_and_preprocess_data()
         self.length = self.features.shape[0]
         self.classes = [0, 1] if zero_one else [-1, 1]
@@ -110,10 +114,11 @@ class Synthetic(Dataset):
 
 
 class A9a(Dataset):
-    def __init__(self, train=True, zero_one=False):
+    def __init__(self, train=True, zero_one=False, noise=0):
         self.train = train
         self.zero_one = zero_one
         self.p = 123
+        self.noise = noise
         self._load_and_preprocess_data()
         self.length = self.features.shape[0]
         self.classes = [0, 1] if zero_one else [-1, 1]
@@ -127,11 +132,15 @@ class A9a(Dataset):
     def _load_and_preprocess_data(self):
         X, y = fetch_openml(name='a9a', data_home='data', return_X_y=True)
         X = X.todense()
+        #X = normalize(np.asarray(X), norm='l2')
+        #sc = StandardScaler()
+        #X = sc.fit_transform(np.asarray(X))
         if self.zero_one:
             y = np.array(list(map(lambda x: 0 if x == -1 else 1, y)))
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=2, train_size=35000)
         if self.train:
             self.features = torch.tensor(X_train, dtype=torch.float32)
+            self.features.add_(torch.normal(0, 1, size=self.features.size()), alpha=self.noise)
             self.targets = torch.tensor(y_train, dtype=torch.float32).reshape(-1, 1)
         else:
             self.features = torch.tensor(X_test, dtype=torch.float32)
@@ -139,7 +148,7 @@ class A9a(Dataset):
 
 
 def test():
-    data = A9a()
+    data = A9a(noise=5)
     avg_n = 0
     for i in range(len(data.features)):
         n = np.linalg.norm(data.features[i])

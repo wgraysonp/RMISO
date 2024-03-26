@@ -22,9 +22,12 @@ class OneLayer(nn.Module):
         self.layer1 = nn.Linear(p, 1, bias=False)
 
     def forward(self, x):
-        #out = F.sigmoid(self.layer1(x))
-        out = self.layer1(x)
+        out = F.sigmoid(self.layer1(x))
+        #out = self.layer1(x)
         return out
+
+    def regularization(self):
+        return 0.01 * torch.sum((self.layer1.weight ** 2) / (1 + self.layer1.weight ** 2))
 
 
 def test():

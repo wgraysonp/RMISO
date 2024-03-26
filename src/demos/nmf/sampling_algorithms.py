@@ -7,7 +7,7 @@ import numpy as np
 
 
 class MetropolisHastings:
-    def __init__(self, initial_state=0, graph=None):
+    def __init__(self, initial_state=0, graph=None, seed=0):
         if graph is None:
             raise ValueError("Must provide graph object")
         d_max = max(graph.degree(node) for node in graph.nodes)
@@ -15,6 +15,7 @@ class MetropolisHastings:
         self.probs = {}
         # node id of current state
         self.state = initial_state
+        random.seed(seed)
         for node in graph.nodes:
             prob = {}
             neighbors = [n for n in graph.neighbors(node)]
@@ -39,15 +40,18 @@ class MetropolisHastings:
     def get_state(self):
         return self.state
 
+    def set_seed(self, seed):
+        random.seed(seed)
+
 
 class RandomWalk:
-    random.seed(9)
 
-    def __init__(self, initial_state=0, graph=None):
+    def __init__(self, initial_state=0, graph=None, seed=0):
         if graph is None:
             raise ValueError("Must provide graph object")
         self.graph = graph 
         self.state = initial_state
+        random.seed(seed)
 
     def step(self):
         neighbors = [n for n in self.graph.neighbors(self.state)]
@@ -56,6 +60,9 @@ class RandomWalk:
 
     def get_state(self):
         return self.state
+
+    def set_seed(self, seed):
+        random.seed(seed)
 
 
 class Uniform:
@@ -74,7 +81,7 @@ class Uniform:
 
 class Sequential:
 
-    def __init__(self, initial_state=0, graph=None):
+    def __init__(self, initial_state=0, graph=None, seed=0):
         if graph is None:
             raise ValueError("Must provide graph object")
         self.state = initial_state

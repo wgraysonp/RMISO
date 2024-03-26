@@ -20,6 +20,7 @@ def get_parser():
     parser = argparse.ArgumentParser(description="Binary Classifier Training")
     parser.add_argument('--dataset', default='synthetic', type=str, help='dataset to use',
                         choices=['synthetic', 'covtype', 'w8a', 'a9a'])
+    parser.add_argument('--noise', default=0, type=float, help='noise added to dataset features')
     parser.add_argument('--sampling_algorithm', default='uniform', type=str, help='algorithm to sample from graph',
                         choices=['uniform', 'metropolis_hastings', 'random_walk', 'sequential'])
     parser.add_argument('--graph_size', default=100, type=int, help='number of nodes in the graph')
@@ -43,6 +44,7 @@ def get_parser():
     parser.add_argument('--tau', default=1, type=float, help='mcsag hitting time. set to 1 for o.g. sag')
     parser.add_argument('--dynamic_step', action='store_true',
                         help='rmiso and mcsag dynamic lr schedule')
+    parser.add_argument('--dr', action='store_true', help='run RMISO with diminishing radius')
     parser.add_argument('--beta1', default=0.9, type=float, help='Adam coefficients beta_1')
     parser.add_argument('--beta2', default=0.99, type=float, help='Adam coefficients beta_2')
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
@@ -60,9 +62,9 @@ def get_parser():
 def build_dataset(args):
     print('==> Preparing data..')
     dataset = {'synthetic': Synthetic, 'covtype': CovType, 'w8a': W8a, 'a9a': A9a}[args.dataset]
-    zero_one = False
+    zero_one = True
 
-    train_set = dataset(train=True, zero_one=zero_one)
+    train_set = dataset(train=True, zero_one=zero_one, noise=args.noise)
     p = train_set.p
     graph = DataGraph(train_set, num_nodes=args.graph_size, num_edges=args.graph_edges, topo=args.graph_topo,
                       radius=args.radius, algorithm=args.sampling_algorithm, sep_classes=args.sep_classes)
@@ -92,7 +94,7 @@ def get_ckpt_name(args, model='resnet', optimizer='sgd', lr=1e-3, tau=50, final_
         'amsgrad': 'lr{}-betas{}-{}'.format(lr, beta1, beta2),
         'adabound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
         'amsbound': 'lr{}-betas{}-{}-final_lr{}-gamma{}'.format(lr, beta1, beta2, final_lr, gamma),
-        'rmiso': 'lr{}-rho{:f}-dynamic_{}'.format(lr, rho, args.dynamic_step),
+        'rmiso': 'lr{}-rho{:f}-dynamic_{}-dr_{}'.format(lr, rho, args.dynamic_step, args.dr),
         'mcsag': 'lr{:f}-rho{:f}-tau{:f}'.format(lr, rho, tau),
     }[optimizer]
     if args.lr_decay:
@@ -146,7 +148,7 @@ def create_optimizer(args, num_nodes, model_params):
     elif args.optim == 'rmiso':
         return RMISO(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, rho=args.rho, delta=args.delta,
-                     weight_decay=args.weight_decay)
+                     dr=args.dr, weight_decay=args.weight_decay)
     elif args.optim == 'mcsag':
         return MCSAG(model_params, args.lr, num_nodes=num_nodes,
                      dynamic_step=args.dynamic_step, tau=args.tau,
@@ -186,6 +188,7 @@ def train(net, epoch, n_iter, device, graph, optimizer, criterion, scheduler, lr
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = criterion(outputs, targets)
+        loss += net.regularization()
         loss.backward()
         if isinstance(optimizer, (RMISO, MCSAG)):
             optimizer.set_current_node(node_id)
@@ -214,8 +217,11 @@ def evaluate(net, device, data_loader, criterion, data_set='train'):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
+            # add regularization
+            loss += net.regularization()
             eval_loss += loss.item()/n_iter
-            predicted = (outputs > 0.0).float() - (outputs <= 0.0).float()
+            #predicted = (outputs > 0.0).float() - (outputs <= 0.0).float()
+            predicted = (outputs > 0.5).float()
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
@@ -258,51 +264,64 @@ def main():
         best_acc = 0
         start_epoch = -1
 
-    net = build_model(args, device, p=p, ckpt=ckpt)
-    criterion = loss_fn if args.model == "one_layer" else nn.SoftMarginLoss()
-    optimizer = create_optimizer(args, num_nodes, net.parameters())
-
-    if args.init_optimizer:
-        initialize_optimizer(net, device, graph_loader, optimizer, criterion)
-
     train_accuracies = []
     test_accuracies = []
     train_losses = []
     test_losses = []
     iter_count = []
 
-    lambda1 = lambda epoch: args.lr * (epoch+1)**(-0.501)
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
-
     n_iter = args.epoch_length
-    for epoch in range(start_epoch + 1, args.epochs):
-        train(net, epoch, n_iter, device, graph_loader, optimizer, criterion, scheduler, lr_decay=args.lr_decay)
-        train_acc, train_loss = evaluate(net, device, train_eval_loader, criterion, data_set='train')
-        test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set='test')
+    seeds = [77, 35, 98, 46, 38, 31, 74, 12, 9, 3]
+    num_seeds = len(seeds)
+    for i in range(num_seeds):
+        graph_loader.set_seed(seeds[i])
+        torch.manual_seed(seeds[i])
 
-        if args.save:
-         # Save checkpoint
-            if test_acc > best_acc:
-                print('Saving...')
-                state = {
-                    'net': net.state_dict(),
-                    'acc': test_acc,
-                    'loss': test_loss,
-                    'epoch': epoch,
-                 }
-                if not os.path.isdir('checkpoint'):
-                    os.mkdir('checkpoint')
-                torch.save(state, os.path.join('checkpoint', ckpt_name))
-                best_acc = test_acc
+        net = build_model(args, device, p=p, ckpt=ckpt)
+        criterion = nn.BCELoss() if args.model == "one_layer" else nn.SoftMarginLoss()
+        optimizer = create_optimizer(args, num_nodes, net.parameters())
 
-            train_accuracies.append(train_acc)
-            train_losses.append(train_loss)
-            test_losses.append(test_loss)
-            test_accuracies.append(test_acc)
-            iter_count.append((epoch + 1)*n_iter)
-            if not os.path.isdir('curve'):
-                os.mkdir('curve')
-            torch.save({'train_acc': train_accuracies, 'train_loss': train_losses, 'test_acc': test_accuracies,
+        lambda1 = lambda epoch: args.lr * (epoch + 1) ** (-0.501)
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+
+        if args.init_optimizer:
+            initialize_optimizer(net, device, graph_loader, optimizer, criterion)
+
+        for epoch in range(start_epoch + 1, args.epochs):
+            train(net, epoch, n_iter, device, graph_loader, optimizer, criterion, scheduler, lr_decay=args.lr_decay)
+            train_acc, train_loss = evaluate(net, device, train_eval_loader, criterion, data_set='train')
+            test_acc, test_loss = evaluate(net, device, test_loader, criterion, data_set='test')
+
+            if args.save:
+            # Save checkpoint
+                if test_acc > best_acc:
+                    print('Saving...')
+                    state = {
+                        'net': net.state_dict(),
+                        'acc': test_acc,
+                        'loss': test_loss,
+                        'epoch': epoch,
+                    }
+                    if not os.path.isdir('checkpoint'):
+                        os.mkdir('checkpoint')
+                    torch.save(state, os.path.join('checkpoint', ckpt_name))
+                    best_acc = test_acc
+
+                if i == 0:
+                    train_accuracies.append(train_acc/num_seeds)
+                    train_losses.append(train_loss/num_seeds)
+                    test_losses.append(test_loss/num_seeds)
+                    test_accuracies.append(test_acc/num_seeds)
+                    iter_count.append((epoch + 1)*n_iter)
+                else:
+                    train_losses[epoch] += train_loss/num_seeds
+                    train_accuracies[epoch] += train_acc/num_seeds
+                    test_losses[epoch] += test_loss/num_seeds
+                    test_accuracies[epoch] += test_acc/num_seeds
+    if args.save:
+        if not os.path.isdir('curve'):
+            os.mkdir('curve')
+        torch.save({'train_acc': train_accuracies, 'train_loss': train_losses, 'test_acc': test_accuracies,
                         'test_loss': test_losses, 'iter_count': iter_count}, os.path.join('curve', ckpt_name))
 
 

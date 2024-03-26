@@ -8,13 +8,10 @@ else:
     from .sampling_algorithms import Uniform, MetropolisHastings, RandomWalk, Sequential
 from torch.utils.data import DataLoader, Subset
 
-#random.seed(17)
-random.seed(23)
-
 class DataGraph(nx.Graph):
 
     def __init__(self, data_set, num_nodes=10, num_edges=9, initial_state=1, topo='random', radius=0.3,
-                 algorithm='uniform', sep_classes=False):
+                 algorithm='uniform', seed=0, sep_classes=False):
         if num_nodes > len(data_set):
             raise ValueError("Number of nodes is larger than dataset")
         if topo == "random":
@@ -35,17 +32,19 @@ class DataGraph(nx.Graph):
         self.num_edges = num_edges
         self.radius = radius
         self.topo = topo
+        self.seed = seed
+        self.set_seed(seed)
         self.random_gen = random.Random(4)
 
         self._create_nodes()
         self._connect_graph()
 
         if algorithm == 'uniform':
-            self.sampling_alg = Uniform(initial_state=initial_state, graph=self)
+            self.sampling_alg = Uniform(initial_state=initial_state, graph=self, seed=seed)
         elif algorithm == 'metropolis_hastings':
-            self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self)
+            self.sampling_alg = MetropolisHastings(initial_state=initial_state, graph=self, seed=seed)
         elif algorithm == "random_walk":
-            self.sampling_alg = RandomWalk(initial_state=initial_state, graph=self)
+            self.sampling_alg = RandomWalk(initial_state=initial_state, graph=self, seed=seed)
         elif algorithm == "sequential":
             self.sampling_alg = Sequential(initial_state=initial_state, graph=self)
 
@@ -138,6 +137,9 @@ class DataGraph(nx.Graph):
                 continue
             else:
                 self.add_edge(node_1, node_2)
+
+    def set_seed(self, seed):
+        random.seed(seed)
 
     def get_max_degree(self):
         return max(self.degree(node) for node in self.nodes)

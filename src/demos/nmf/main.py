@@ -46,9 +46,9 @@ def get_parser():
     return parser
 
 
-def build_dataset(dataset, num_examples=10):
+def build_dataset(dataset, num_examples=10, seed=0):
     assert dataset in DATASETS, "invalid dataset"
-    random_gen = random.Random(4)
+    random_gen = random.Random(seed)
     if dataset == "mnist":
         X, y = fetch_openml("mnist_784", version=1, return_X_y=True, as_frame=False, parser="auto")
         X = X/255.0
@@ -70,12 +70,13 @@ def build_full_batch(data):
     return X.astype('float32')
 
 
-def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_components=15, sep_labels=False):
+def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_components=15, sep_labels=False, seed=0):
     assert topo in GRAPH_TOPOS, "invalid graph topology"
     assert len(data) >= num_nodes, "not enough nodes"
+    np.random.seed(seed)
 
     if sep_labels:
-        random_gen = random.Random(4)
+        random_gen = random.Random(seed)
         graph = nx.Graph()
         N = len(data)
         m = int(N / num_nodes)
@@ -96,7 +97,7 @@ def build_graph(data, labels, num_nodes=10, radius=0.3, topo="geometric", n_comp
                 j += 1
 
     else:
-        random_gen = random.Random(4)
+        random_gen = random.Random(seed)
         graph = nx.Graph()
         N = len(data)
         idxs = list(range(N))
@@ -247,43 +248,58 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
-    np.random.seed(0)
-    data, labels, dims = build_dataset("mnist", num_examples=args.n_examples)
-    m, n, d = dims[0], dims[1], args.n_components
+    seeds = [3, 11, 48, 7, 48, 2, 8, 51, 8, 5]
+    #seeds = [3]
+    losses = []
+    times = []
 
-    if args.full_batch:
-        assert args.optim in FULL_BATCH_ALGS
-        n *= args.n_examples
-        X = build_full_batch(data)
-        W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d)))
-        H = np.maximum(np.random.rand(d, n), np.zeros(shape=(d, n)))
-        optimizer = create_optimizer(args.optim, W, args, nodes=args.graph_size, X=X, H=H)
-        losses, times = train_full_batch(optimizer, loss, n_iter=args.iterations, n_samples=args.n_examples)
-        nodes = args.graph_size
-    else:
-        assert args.optim in MINI_BATCH_ALGS
-        graph = build_graph(data, labels, topo=args.graph_topo, num_nodes=args.graph_size, radius=args.radius,
-                            n_components=args.n_components, sep_labels=args.sep_labels)
-        sampler = {
-            "uniform": Uniform,
-            "metropolis_hastings": MetropolisHastings,
-            "random_walk": RandomWalk,
-            "sequential": Sequential
-        }[args.sampling_algorithm](graph=graph)
+    for i in range(len(seeds)):
+        np.random.seed(seeds[i])
+        data, labels, dims = build_dataset("mnist", num_examples=args.n_examples, seed=seeds[i])
+        m, n, d = dims[0], dims[1], args.n_components
 
-        W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d))).astype('float32')
-
-        nodes = len(graph.nodes)
-        optimizer = create_optimizer(args.optim, W, args, nodes)
-        if isinstance(optimizer, (Rmiso, SAG)):
-            initialization_time = init_optimizer(optimizer, graph)
+        if args.full_batch:
+            assert args.optim in FULL_BATCH_ALGS
+            n *= args.n_examples
+            X = build_full_batch(data)
+            W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d)))
+            H = np.maximum(np.random.rand(d, n), np.zeros(shape=(d, n)))
+            optimizer = create_optimizer(args.optim, W, args, nodes=args.graph_size, X=X, H=H)
+            losses, times = train_full_batch(optimizer, loss, n_iter=args.iterations, n_samples=args.n_examples)
+            nodes = args.graph_size
         else:
-            initialization_time = 0
-        losses, times = train(optimizer, graph, sampler, loss, n_iter=args.iterations, initial_time=initialization_time)
+            assert args.optim in MINI_BATCH_ALGS
+            graph = build_graph(data, labels, topo=args.graph_topo, num_nodes=args.graph_size, radius=args.radius,
+                            n_components=args.n_components, sep_labels=args.sep_labels)
+            sampler = {
+                "uniform": Uniform,
+                "metropolis_hastings": MetropolisHastings,
+                "random_walk": RandomWalk,
+                "sequential": Sequential
+            }[args.sampling_algorithm](graph=graph, seed=seeds[i])
 
-    save_name = get_save_name(args, nodes)
+            W = np.maximum(np.random.rand(m, d), np.zeros(shape=(m, d))).astype('float32')
+
+            nodes = len(graph.nodes)
+            optimizer = create_optimizer(args.optim, W, args, nodes)
+            if isinstance(optimizer, (Rmiso, SAG)):
+                initialization_time = init_optimizer(optimizer, graph)
+            else:
+                initialization_time = 0
+            run_losses, run_times = train(optimizer, graph, sampler, loss,
+                                             n_iter=args.iterations, initial_time=initialization_time)
+
+            if i == 0:
+                losses, times = np.array(run_losses)*(1/len(seeds)), np.array(run_times)*(1/len(seeds))
+            else:
+                losses = losses + np.array(run_losses)*(1/len(seeds))
+                times = times + np.array(run_times)*(1/len(seeds))
+
+    save_name = get_save_name(args, args.graph_size)
     if not os.path.isdir('curve'):
         os.mkdir('curve')
+    if not os.path.isdir('curve/cycle'):
+        os.mkdir('curve/cycle')
 
     result_dict = {"losses": losses, "times": times}
     path = os.path.join('curve/cycle', save_name) if args.graph_topo == "cycle" else os.path.join('curve', save_name)

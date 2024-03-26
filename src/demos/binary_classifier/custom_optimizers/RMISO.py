@@ -4,7 +4,7 @@ from torch.optim import Optimizer
 
 class RMISO(Optimizer):
 
-    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, rho=1, delta=1e-5, weight_decay=0):
+    def __init__(self, params, lr, num_nodes=10, dynamic_step=False, dr=False, rho=1, delta=1e-5, weight_decay=0):
         # lr is 1/L where L is lipshitz constant. Store it this way so that the learning rate scheduler can be used
         if not 0.0 <= rho:
             raise ValueError("Invalid regularization parameter: {}".format(rho))
@@ -12,9 +12,15 @@ class RMISO(Optimizer):
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not dynamic_step:
             delta = 1
+        if dr:
+            rho = 0
+        else:
+            # take rho = Lt_{\odot}
+            rho = rho*1/lr
         defaults = dict(lr=lr, dynamic_step=dynamic_step, rho=rho, delta=delta, weight_decay=weight_decay)
         super(RMISO, self).__init__(params, defaults)
         self.num_nodes = num_nodes
+        self.dr = dr
         self.curr_node = 0
 
         # dictionary to store past gradients and parameters
@@ -99,7 +105,16 @@ class RMISO(Optimizer):
                 avg_param_reg.mul_(1-alpha)
                 avg_param_reg.add_(param, alpha=alpha)
 
-                p.data = avg_param_reg.add(-avg_grad, alpha=step_size)
+                if self.dr:
+                    temp = avg_param_reg.add(-avg_grad, alpha=step_size)
+                    r = state['step']**(-0.5)
+                    norm = torch.norm(p.data - temp)
+                    if norm > r:
+                        p.data = p.data + (r/norm)*(temp - p.data)
+                    else:
+                        p.data = temp
+                else:
+                    p.data = avg_param_reg.add(-avg_grad, alpha=step_size)
 
         return loss
 

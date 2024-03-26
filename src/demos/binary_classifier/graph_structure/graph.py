@@ -9,11 +9,12 @@ class Node:
 
 
 class Graph:
-    def __init__(self, indices, num_nodes=10, num_edges=9):
+    def __init__(self, indices, num_nodes=10, num_edges=9, seed=0):
         assert isinstance(num_nodes, int), "number of nodes must be an integer"
         assert type(num_edges) == int, "number of edges must be an integer"
 
         N = len(indices)
+        random.seed(seed)
 
         if num_nodes > N:
             raise ValueError("number of nodes must be less than or equal to {}".format(N))

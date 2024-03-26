@@ -84,7 +84,7 @@ class ONMF(NMFOptim):
         self.aggregates = A, B
         self.step_count += 1
 
-    def update_dict(self, sub_iter=10, stopping_diff=0.01):
+    def update_dict(self, sub_iter=50, stopping_diff=0.1):
         A, B = self.aggregates
         k = self.n_components
         W1 = self.W.copy()
@@ -375,10 +375,10 @@ class Rmiso(NMFOptim):
             self.return_times = self.return_times + np.ones(self.n_nodes)
             self.return_times[self.curr_node] = 0
             reg = self.rho + np.amax(self.return_times)
+        elif self.dr:
+            reg = 0
         else:
             reg = self.rho
-
-        reg= self.rho if not self.dr else 0
 
         while (i < sub_iter) and (dist > stopping_diff):
             W1_old = W1.copy()
